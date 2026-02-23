@@ -25,7 +25,7 @@ class _SignupPageState extends State<SignupPage> {
   );
 
   final RegExp passwordRegex = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#@$!%*?&])[A-Za-z\d@$!%*?#&]{8,}$',
   );
 
   final RegExp nameRegex = RegExp(r'^[a-zA-Z]{2,}$');
@@ -118,9 +118,8 @@ class _SignupPageState extends State<SignupPage> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => EmailVerificationSentPage(
-                email: emailController.text.trim(),
-              ),
+              builder: (_) =>
+                  EmailVerificationSentPage(email: emailController.text.trim()),
             ),
           );
         }
@@ -128,19 +127,13 @@ class _SignupPageState extends State<SignupPage> {
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -162,28 +155,48 @@ class _SignupPageState extends State<SignupPage> {
           key: _formKey,
           child: ListView(
             children: [
-              const Text("NeuroGym",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 28, color: Colors.white)),
+              const Text(
+                "NeuroGym",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 28, color: Colors.white),
+              ),
               const SizedBox(height: 20),
-              _field(firstNameController, "First Name", validator: _validateFirstName),
-              _field(lastNameController, "Last Name", validator: _validateLastName),
+              _field(
+                firstNameController,
+                "First Name",
+                validator: _validateFirstName,
+              ),
+              _field(
+                lastNameController,
+                "Last Name",
+                validator: _validateLastName,
+              ),
               _field(emailController, "Email", validator: _validateEmail),
-              _field(passwordController, "Password", hide: true, validator: _validatePassword),
-              _field(confirmPasswordController, "Confirm Password", hide: true, validator: _validateConfirmPassword),
+              _field(
+                passwordController,
+                "Password",
+                hide: true,
+                validator: _validatePassword,
+              ),
+              _field(
+                confirmPasswordController,
+                "Confirm Password",
+                hide: true,
+                validator: _validateConfirmPassword,
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan),
                 onPressed: _isLoading ? null : _signup,
                 child: _isLoading
                     ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                     : const Text("Create Account"),
               ),
               const SizedBox(height: 20),
@@ -194,8 +207,10 @@ class _SignupPageState extends State<SignupPage> {
                     MaterialPageRoute(builder: (_) => const LoginPage()),
                   );
                 },
-                child:
-                const Text("Sign in", style: TextStyle(color: Colors.green)),
+                child: const Text(
+                  "Sign in",
+                  style: TextStyle(color: Colors.green),
+                ),
               ),
             ],
           ),
@@ -204,7 +219,12 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  Widget _field(TextEditingController c, String h, {bool hide = false, String? Function(String?)? validator}) {
+  Widget _field(
+    TextEditingController c,
+    String h, {
+    bool hide = false,
+    String? Function(String?)? validator,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(

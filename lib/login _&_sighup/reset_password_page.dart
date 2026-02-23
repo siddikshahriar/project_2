@@ -74,25 +74,19 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginPage()),
-              (route) => false,
+          (route) => false,
         );
       }
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -166,17 +160,17 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   onPressed: _isLoading ? null : _resetPassword,
                   child: _isLoading
                       ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
                       : const Text(
-                    "Reset Password",
-                    style: TextStyle(fontSize: 16),
-                  ),
+                          "Reset Password",
+                          style: TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
             ],

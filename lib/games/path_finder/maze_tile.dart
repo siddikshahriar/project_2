@@ -1,0 +1,42 @@
+import 'package:flame/components.dart';
+import 'package:flutter/material.dart';
+
+class MazeTile extends PositionComponent {
+  final String type;
+  final int row;
+  final int col;
+  final double tilesize;
+  final bool highlight;
+
+  MazeTile({
+    required this.type,
+    required this.row,
+    required this.col,
+    required this.tilesize,
+    this.highlight = false,
+  }) {
+    position = Vector2(col * tilesize, row * tilesize);
+    size = Vector2.all(tilesize);
+  }
+  @override
+  void render(Canvas canvas) {
+    final rect = size.toRect();
+    final paint = Paint();
+
+    if (highlight && type != "#" && type != "S" && type != "E") {
+      paint.color = Colors.yellow.withOpacity(0.4);
+      canvas.drawRect(rect, paint);
+    }
+
+    if (type == "#")
+      paint.color = Colors.black;
+    else if (type == "S")
+      paint.color = Colors.green;
+    else if (type == "E")
+      paint.color = Colors.red;
+    else
+      paint.color = Colors.white;
+
+    canvas.drawRect(rect, paint);
+  }
+}

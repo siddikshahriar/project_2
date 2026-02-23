@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'home_page.dart';
+import '../home_page.dart';
 import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -23,7 +23,7 @@ class _LoginPageState extends State<LoginPage> {
   );
 
   final RegExp passwordRegex = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!#%*?&])[A-Za-z\d@$!%*#?&]{8,}$',
   );
 
   @override
@@ -83,19 +83,13 @@ class _LoginPageState extends State<LoginPage> {
           message = 'Please verify your email before logging in.';
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(message), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -149,7 +143,9 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const ForgotPasswordPage(),
+                      ),
                     );
                   },
                   child: const Text(
@@ -166,13 +162,13 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: _isLoading ? null : _login,
                   child: _isLoading
                       ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
                       : const Text("Sign in"),
                 ),
               ),
@@ -184,7 +180,10 @@ class _LoginPageState extends State<LoginPage> {
                     MaterialPageRoute(builder: (_) => const SignupPage()),
                   );
                 },
-                child: const Text("Sign up", style: TextStyle(color: Colors.green)),
+                child: const Text(
+                  "Sign up",
+                  style: TextStyle(color: Colors.green),
+                ),
               ),
             ],
           ),

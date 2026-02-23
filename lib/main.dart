@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
 
-import 'login_page.dart';
+import 'login _&_sighup/login_page.dart';
 import 'home_page.dart';
-import 'reset_password_page.dart';
+import 'login _&_sighup/reset_password_page.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -83,14 +83,17 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> _setSessionAndNavigate(String accessToken, {required bool isRecovery}) async {
+  Future<void> _setSessionAndNavigate(
+    String accessToken, {
+    required bool isRecovery,
+  }) async {
     try {
       await Supabase.instance.client.auth.setSession(accessToken);
 
       if (isRecovery) {
         navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const ResetPasswordPage()),
-              (route) => false,
+          (route) => false,
         );
       } else {
         // Sign out after verification so they can log in manually
@@ -98,7 +101,7 @@ class _MyAppState extends State<MyApp> {
 
         navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginPage()),
-              (route) => false,
+          (route) => false,
         );
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -144,9 +147,15 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(const Duration(seconds: 2), () {
       final session = Supabase.instance.client.auth.currentSession;
       if (session != null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
       } else {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
       }
     });
   }
@@ -156,7 +165,14 @@ class _SplashScreenState extends State<SplashScreen> {
     return const Scaffold(
       backgroundColor: Colors.black,
       body: Center(
-        child: Text("NeuroGym", style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white)),
+        child: Text(
+          "NeuroGym",
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }

@@ -1,9 +1,11 @@
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:project_2/number_matching.dart';
+import 'package:project_2/games/number_matching/number_matching.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login_page.dart';
+import 'login _&_sighup/login_page.dart';
+import 'games/path_finder/pathfinder_levels.dart';
+import 'games/path_finder/pathfinder_world.dart';
 
 enum GameType { blackShelby, numberMatching, pathFinder }
 
@@ -39,8 +41,9 @@ class HomePage extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    GameWidget(game: NeuroGym(gameType: GameType.blackShelby)),
+                builder: (_) => _centeredGameScreen(
+                  GameWidget(game: NeuroGym(gameType: GameType.blackShelby)),
+                ),
               ),
             );
           }),
@@ -48,8 +51,8 @@ class HomePage extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => GameWidget(
-                  game: NeuroGym(gameType: GameType.numberMatching),
+                builder: (_) => _centeredGameScreen(
+                  GameWidget(game: NeuroGym(gameType: GameType.numberMatching)),
                 ),
               ),
             );
@@ -58,12 +61,39 @@ class HomePage extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    GameWidget(game: NeuroGym(gameType: GameType.pathFinder)),
+                builder: (_) => _centeredGameScreen(
+                  GameWidget(game: NeuroGym(gameType: GameType.pathFinder)),
+                ),
               ),
             );
           }),
         ],
+      ),
+    );
+  }
+
+  Widget _centeredGameScreen(Widget gameWidget) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(16),
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: SizedBox(width: 400, height: 400, child: gameWidget),
+          ),
+        ),
       ),
     );
   }
@@ -98,18 +128,24 @@ class NeuroGym extends FlameGame {
         add(NumberMatching(position: Vector2.zero(), n: 3));
         break;
       case GameType.blackShelby:
-        // TODO: Implement Black Shelby game component
         add(
           TextComponent(text: 'Black Shelby - Coming Soon!')
             ..position = Vector2(100, 100),
         );
         break;
       case GameType.pathFinder:
-        // TODO: Implement Path Finder game component
-        add(
-          TextComponent(text: 'Path Finder - Coming Soon!')
-            ..position = Vector2(100, 100),
+        final world = PathFinderWorld(PathFinderLevels.levels[0]);
+        this.world = world;
+        await world.onLoad(); // Ensure grid and player are initialized
+        const double padding = 32.0;
+        final camera = CameraComponent.withFixedResolution(
+          world: world,
+          width: world.cols * world.tileSize + padding * 2,
+          height: world.rows * world.tileSize + padding * 2,
         );
+        camera.viewfinder.anchor = Anchor.topLeft;
+        camera.viewfinder.position = Vector2(-padding, -padding);
+        add(camera);
         break;
     }
   }
