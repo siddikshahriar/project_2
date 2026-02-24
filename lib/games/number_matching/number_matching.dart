@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flame/camera.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
@@ -10,22 +11,21 @@ import 'package:ordered_set/read_only_ordered_set.dart';
 
 class NumberMatching extends Component with HasGameReference<FlameGame> {
   final Vector2 position;
-  late final World world;
-  late final CameraComponent camera;
+  late World world;
+  late CameraComponent camera;
   final int n;
-
   NumberMatching({required this.position, required this.n});
 
   @override
   Future<void> onLoad() async {
     world = NumberMatchingWorld(n: n);
-
     camera = CameraComponent.withFixedResolution(
       world: world,
-      width: 600,
-      height: 800,
+      width: n * 100,
+      height: n * 100,
     );
 
+    (world as NumberMatchingWorld).attachedCamera = camera;
     // place this mini-game on landing page
     camera.viewport.position = position;
     camera.viewfinder.position = Vector2(n * 100 / 2, n * 100 / 2);
@@ -38,6 +38,11 @@ class NumberMatching extends Component with HasGameReference<FlameGame> {
 class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
   final int n;
   final double tileSize = 100;
+  late TextComponent countText;
+  late TextComponent finalText;
+  late CameraComponent attachedCamera;
+  int moves = 0;
+  bool gameOver = false;
 
   late List<List<int?>> grid;
 
@@ -48,6 +53,29 @@ class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
     _initBoard();
     _shuffle();
     _buildTiles();
+    _buildCountHUD();
+  }
+
+  void _buildCountHUD() {
+    final hud = PositionComponent();
+    countText = TextComponent(
+      text: 'moves: $moves',
+      position: Vector2(160, -50),
+      anchor: Anchor.topCenter,
+    );
+    hud.add(countText);
+    game.camera.viewport.add(hud);
+    //attachedCamera.viewport.add(hud);
+  }
+
+  void _buildFinalHUD() {
+    final hud = PositionComponent();
+    finalText = TextComponent(
+      text: 'Puzzle solved!!',
+      position: Vector2(120, 420),
+    );
+    hud.add(finalText);
+    game.camera.viewport.add(hud);
   }
 
   void _initBoard() {
@@ -75,7 +103,6 @@ class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
 
   bool _move(int r, int c) {
     if (!_canMove(r, c)) return false;
-
     var (er, ec) = _emptyPos();
 
     grid[er][ec] = grid[r][c];
@@ -141,15 +168,13 @@ class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
   }
 
   void _onTileTap(int r, int c) {
-    if (_move(r, c)) {
+    if (!gameOver && _move(r, c)) {
       _buildTiles();
-
+      ++moves;
+      countText.text = 'moves: $moves';
       if (_isSolved()) {
-        add(
-          TextComponent(text: 'You solved it!')
-            ..position = Vector2(n * tileSize / 2, n * tileSize + 20)
-            ..anchor = Anchor.center,
-        );
+        gameOver = true;
+        _buildFinalHUD();
       }
     }
   }
