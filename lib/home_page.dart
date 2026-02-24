@@ -1,11 +1,9 @@
-import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:project_2/games/number_matching/number_matching.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login _&_sighup/login_page.dart';
-import 'games/path_finder/pathfinder_levels.dart';
-import 'games/path_finder/pathfinder_world.dart';
+import 'games/neurogym.dart';
+import 'games/path_finder/path_finder_dashboard.dart';
 
 enum GameType { blackShelby, numberMatching, pathFinder }
 
@@ -18,17 +16,23 @@ class HomePage extends StatelessWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text("NeuroGym Games"),
+        title: const Text(
+          "NeuroGym Games",
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
               await Supabase.instance.client.auth.signOut();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-                (route) => false,
-              );
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  (route) => false,
+                );
+              }
             },
           ),
         ],
@@ -36,34 +40,52 @@ class HomePage extends StatelessWidget {
       body: GridView.count(
         crossAxisCount: 2,
         padding: const EdgeInsets.all(16),
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
         children: [
           _gameCard("Black Shelby", "assets/black_shelby.png", () {
-            Navigator.push(
+            _navigateToGame(
               context,
-              MaterialPageRoute(
-                builder: (_) => _centeredGameScreen(
-                  GameWidget(game: NeuroGym(gameType: GameType.blackShelby)),
-                ),
-              ),
+              GameWidget(game: NeuroGym(gameType: GameType.blackShelby)),
             );
           }),
+
           _gameCard("Number Matching", "assets/number_matching.png", () {
-            Navigator.push(
+            final gameInstance = NeuroGym(gameType: GameType.numberMatching);
+            _navigateToGame(
               context,
-              MaterialPageRoute(
-                builder: (_) => _centeredGameScreen(
-                  GameWidget(game: NeuroGym(gameType: GameType.numberMatching)),
-                ),
+              Stack(
+                children: [
+                  GameWidget(game: gameInstance),
+                  Positioned(
+                    bottom: 20,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () => gameInstance.restartNumberMatching(),
+                        child: const Text("Restart Game"),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }),
+
           _gameCard("Path Finder", "assets/path_finder.png", () {
-            Navigator.push(
+            _navigateToGame(
               context,
-              MaterialPageRoute(
-                builder: (_) => _centeredGameScreen(
-                  GameWidget(game: NeuroGym(gameType: GameType.pathFinder)),
-                ),
+              GameWidget<NeuroGym>(
+                game: NeuroGym(gameType: GameType.pathFinder),
+                overlayBuilderMap: {
+                  'PathFinderDashboard': (context, game) =>
+                      PathFinderDashboard(game: game),
+                },
               ),
             );
           }),
@@ -72,26 +94,51 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  void _navigateToGame(BuildContext context, Widget gameWidget) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _centeredGameScreen(gameWidget)),
+    );
+  }
+
   Widget _centeredGameScreen(Widget gameWidget) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0D1117), // Deeper dark theme
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: const BackButton(color: Colors.white),
+      ),
       body: Center(
         child: Container(
+          // Allow the container to take up more space on the screen
+          margin: const EdgeInsets.all(16),
+          // Use ConstrainedBox to prevent the game from becoming infinitely large on tablets
+          constraints: const BoxConstraints(
+            maxWidth: 500, // Maximum width for the game area
+            maxHeight: 1000, // Maximum height for the game area
+          ),
           decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(24),
+            color: const Color(0xFF161B22), // GitHub-style dark grey
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: Colors.white.withOpacity(0.1), width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
+                color: Colors.black.withOpacity(0.6),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
-          padding: const EdgeInsets.all(16),
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: SizedBox(width: 400, height: 400, child: gameWidget),
+          // Padding inside the "frame"
+          padding: const EdgeInsets.all(12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16), // Match container's vibe
+            child: AspectRatio(
+              // CHANGE THIS: 0.8 to 1.0 is ideal for grid games
+              aspectRatio: 0.5,
+              child: gameWidget,
+            ),
           ),
         ),
       ),
@@ -102,51 +149,31 @@ class HomePage extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Card(
+        elevation: 4,
         color: Colors.grey[900],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(image, height: 100),
-            const SizedBox(height: 10),
-            Text(title, style: const TextStyle(color: Colors.white)),
+            // Added error handling for images
+            Image.asset(
+              image,
+              height: 80,
+              errorBuilder: (context, error, stackTrace) =>
+                  const Icon(Icons.gamepad, size: 80, color: Colors.white24),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
           ],
         ),
       ),
     );
-  }
-}
-
-class NeuroGym extends FlameGame {
-  final GameType gameType;
-
-  NeuroGym({required this.gameType});
-
-  @override
-  Future<void> onLoad() async {
-    switch (gameType) {
-      case GameType.numberMatching:
-        add(NumberMatching(position: Vector2.zero(), n: 3));
-        break;
-      case GameType.blackShelby:
-        add(
-          TextComponent(text: 'Black Shelby - Coming Soon!')
-            ..position = Vector2(100, 100),
-        );
-        break;
-      case GameType.pathFinder:
-        final world = PathFinderWorld(PathFinderLevels.levels[0]);
-        this.world = world;
-        await world.onLoad(); // Ensure grid and player are initialized
-        const double padding = 32.0;
-        final camera = CameraComponent.withFixedResolution(
-          world: world,
-          width: world.cols * world.tileSize + padding * 2,
-          height: world.rows * world.tileSize + padding * 2,
-        );
-        camera.viewfinder.anchor = Anchor.topLeft;
-        camera.viewfinder.position = Vector2(-padding, -padding);
-        add(camera);
-        break;
-    }
   }
 }
