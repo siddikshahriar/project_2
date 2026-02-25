@@ -4,7 +4,6 @@ import 'package:project_2/games/neurogym.dart';
 import 'package:project_2/games/path_finder/pathfinder_levels.dart';
 
 class PathFinderDashboard extends StatefulWidget {
-  // Pass the NeuroGym instance so the dashboard can call 'startPathFinder'
   final NeuroGym game;
   const PathFinderDashboard({super.key, required this.game});
   @override
@@ -84,8 +83,6 @@ class _PathFinderDashboardState extends State<PathFinderDashboard> {
   }
 
   void _startLevel(dynamic levelData) {
-    // Instead of pushing a new route, we tell the game to load the world.
-    // This assumes you have implemented 'startPathFinder' in your NeuroGym class.
     widget.game.startPathFinder(levelData);
   }
 }

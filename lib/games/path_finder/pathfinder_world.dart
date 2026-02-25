@@ -4,7 +4,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:project_2/games/path_finder/maze_tile.dart';
-import 'pathfinder_level.dart';
+import 'package:project_2/games/path_finder/pathfinder_levels.dart';
 import 'package:project_2/games/path_finder/pathfinder_player.dart';
 import 'package:flame/input.dart';
 
@@ -12,7 +12,6 @@ class PathFinderWorld extends World
     with HasGameReference<FlameGame>, TapCallbacks, KeyboardHandler {
   late final PathFinderLevel level;
   final double tileSize = 50;
-
   late List<List<String>> grid;
   late Point player;
   late PlayerComponent playerComp;
@@ -22,8 +21,6 @@ class PathFinderWorld extends World
 
   late TextComponent moveCounterText;
   late TextComponent winText;
-
-  // Track history as a list to allow "turning white again" on backtrack
   List<Point> pathHistory = [];
   late int rows;
   late int cols;
@@ -61,7 +58,7 @@ class PathFinderWorld extends World
     );
 
     winText = TextComponent(
-      text: '', // Start empty so it doesn't show
+      text: '',
       position: Vector2(cols * tileSize / 2, rows * tileSize / 2),
       anchor: Anchor.center,
       priority: 1000,
@@ -74,7 +71,6 @@ class PathFinderWorld extends World
         ),
       ),
     );
-
     add(moveCounterText);
     add(winText);
   }
@@ -108,8 +104,6 @@ class PathFinderWorld extends World
   void onTapDown(TapDownEvent event) {
     if (gameWon) return;
     final pos = event.localPosition;
-
-    // Calculate direction based on tap relative to player
     final center = playerComp.position + Vector2.all(tileSize / 2);
     final dx = pos.x - center.x;
     final dy = pos.y - center.y;
@@ -123,7 +117,6 @@ class PathFinderWorld extends World
 
   void move(int dr, int dc) {
     if (gameWon) return;
-
     int r = player.r;
     int c = player.c;
     bool moved = false;
@@ -131,8 +124,6 @@ class PathFinderWorld extends World
     while (true) {
       int nr = r + dr;
       int nc = c + dc;
-
-      // Stop at walls or boundaries
       if (nr < 0 || nr >= rows || nc < 0 || nc >= cols || grid[nr][nc] == "#")
         break;
 
@@ -141,19 +132,14 @@ class PathFinderWorld extends World
       moved = true;
 
       Point currentPoint = Point(r, c);
-
-      // BACKTRACK LOGIC:
-      // If the new square is already the previous square in history, remove the last one (turn white)
       if (pathHistory.length > 1 &&
           pathHistory[pathHistory.length - 2] == currentPoint) {
         pathHistory.removeLast();
       } else {
-        // Otherwise, add to history (turn yellow)
         if (!pathHistory.contains(currentPoint)) {
           pathHistory.add(currentPoint);
         }
       }
-
       if (_isJunction(r, c)) break;
       if (r == level.end.r && c == level.end.c) break;
     }
@@ -170,7 +156,6 @@ class PathFinderWorld extends World
 
   void _updateTileHighlights() {
     children.whereType<MazeTile>().forEach((tile) {
-      // Tile turns yellow ONLY if it is in the current pathHistory
       tile.highlight = pathHistory.any(
         (p) => p.r == tile.row && p.c == tile.col,
       );
@@ -186,7 +171,6 @@ class PathFinderWorld extends World
 
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
-    // Use the new event system to check for key presses
     if (event is KeyDownEvent &&
         keysPressed.contains(LogicalKeyboardKey.keyR)) {
       _restart();

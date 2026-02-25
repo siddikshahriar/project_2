@@ -1,5 +1,6 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:project_2/games/number_matching/number_matching_dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login _&_sighup/login_page.dart';
 import 'games/neurogym.dart';
@@ -51,28 +52,14 @@ class HomePage extends StatelessWidget {
           }),
 
           _gameCard("Number Matching", "assets/number_matching.png", () {
-            final gameInstance = NeuroGym(gameType: GameType.numberMatching);
             _navigateToGame(
               context,
-              Stack(
-                children: [
-                  GameWidget(game: gameInstance),
-                  Positioned(
-                    bottom: 20,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () => gameInstance.restartNumberMatching(),
-                        child: const Text("Restart Game"),
-                      ),
-                    ),
-                  ),
-                ],
+              GameWidget<NeuroGym>(
+                game: NeuroGym(gameType: GameType.numberMatching),
+                overlayBuilderMap: {
+                  'NumberMatchingDashboard': (context, game) =>
+                      NumberMatchingDashboard(game: game),
+                },
               ),
             );
           }),
