@@ -26,7 +26,7 @@ class NeuroGym extends FlameGame {
         add(
           TextComponent(
             text: 'Black Shelby - Coming Soon!',
-            position: Vector2(100, 100),
+            position: Vector2(30, 100),
           ),
         );
         break;

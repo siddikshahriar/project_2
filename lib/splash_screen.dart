@@ -6,6 +6,7 @@ import 'home_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -14,11 +15,10 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+
     Timer(const Duration(seconds: 2), () {
-      /// user session
       final session = Supabase.instance.client.auth.currentSession;
 
-      /// user is logged in or not
       if (session != null) {
         Navigator.pushReplacement(
           context,
@@ -33,7 +33,6 @@ class _SplashScreenState extends State<SplashScreen> {
     });
   }
 
-  /// building the splash screen
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
