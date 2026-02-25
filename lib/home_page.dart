@@ -10,7 +10,6 @@ enum GameType { blackShelby, numberMatching, pathFinder }
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,15 +97,10 @@ class HomePage extends StatelessWidget {
       ),
       body: Center(
         child: Container(
-          // Allow the container to take up more space on the screen
           margin: const EdgeInsets.all(16),
-          // Use ConstrainedBox to prevent the game from becoming infinitely large on tablets
-          constraints: const BoxConstraints(
-            maxWidth: 500, // Maximum width for the game area
-            maxHeight: 1000, // Maximum height for the game area
-          ),
+          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 1000),
           decoration: BoxDecoration(
-            color: const Color(0xFF161B22), // GitHub-style dark grey
+            color: const Color(0xFF161B22),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(color: Colors.white.withOpacity(0.1), width: 2),
             boxShadow: [
@@ -117,15 +111,10 @@ class HomePage extends StatelessWidget {
               ),
             ],
           ),
-          // Padding inside the "frame"
           padding: const EdgeInsets.all(12),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16), // Match container's vibe
-            child: AspectRatio(
-              // CHANGE THIS: 0.8 to 1.0 is ideal for grid games
-              aspectRatio: 0.5,
-              child: gameWidget,
-            ),
+            borderRadius: BorderRadius.circular(16),
+            child: AspectRatio(aspectRatio: 0.5, child: gameWidget),
           ),
         ),
       ),
@@ -142,7 +131,6 @@ class HomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Added error handling for images
             Image.asset(
               image,
               height: 80,

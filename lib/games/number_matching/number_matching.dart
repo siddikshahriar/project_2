@@ -3,57 +3,41 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:project_2/games/number_matching/number_tile.dart';
 
 class NumberMatching extends Component with HasGameReference<FlameGame> {
   final Vector2 position;
-  final int n; // Default n if needed, but usually set via dashboard
-
+  final int n;
   World? world;
   CameraComponent? camera;
-
   NumberMatching({required this.position, this.n = 3});
-
   @override
   Future<void> onLoad() async {
-    // Instead of loading the grid immediately, we show the dashboard overlay
     game.overlays.add('NumberMatchingDashboard');
   }
 
-  /// Called from the NumberMatchingDashboard when a difficulty is selected
   Future<void> startLevel(int difficulty) async {
-    // 1. Remove the dashboard
     game.overlays.remove('NumberMatchingDashboard');
 
-    // 2. Clean up any existing game components (for restarts/level changes)
     if (world != null) world!.removeFromParent();
     if (camera != null) camera!.removeFromParent();
 
-    // 3. Initialize the new World and Camera
     world = NumberMatchingWorld(n: difficulty);
-
-    // We use a constant 1000x1000 resolution for consistent HUD sizing
     camera = CameraComponent.withFixedResolution(
       world: world!,
       width: n * 100,
-      height: n * 100,
+      height: n * 100 + 200,
     );
 
-    // Center the grid and zoom to fit nicely
     final gridDimension = difficulty * 100.0;
     camera!.viewfinder.position = Vector2(gridDimension / 2, gridDimension / 2);
     camera!.viewfinder.anchor = Anchor.center;
-    //camera!.viewfinder.zoom = 0.8;
-
     await game.add(world!);
     await game.add(camera!);
-
-    // Attach the camera to the world logic for HUD placement
     (world as NumberMatchingWorld).attachedCamera = camera!;
     (world as NumberMatchingWorld)._buildCountHUD();
   }
 }
-
-// --- World and Tile classes remain largely the same, but ensure they use 'attachedCamera' ---
 
 class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
   final int n;
@@ -78,7 +62,7 @@ class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
   void _buildCountHUD() {
     countText = TextComponent(
       text: 'Moves: $moves',
-      position: Vector2(500, 50),
+      position: Vector2(150, 0),
       anchor: Anchor.topCenter,
       textRenderer: TextPaint(
         style: const TextStyle(
@@ -94,12 +78,12 @@ class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
   void _buildFinalHUD() {
     finalText = TextComponent(
       text: 'PUZZLE SOLVED!!',
-      position: Vector2(500, 920),
+      position: Vector2(150, 200),
       anchor: Anchor.bottomCenter,
       textRenderer: TextPaint(
         style: const TextStyle(
           color: Colors.greenAccent,
-          fontSize: 48,
+          fontSize: 32,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -194,59 +178,5 @@ class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
         _buildFinalHUD();
       }
     }
-  }
-}
-
-class NumberTile extends PositionComponent with TapCallbacks {
-  final int? number;
-  final int row;
-  final int col;
-  final double tilesize;
-  final Function(int, int) onTapTile;
-
-  NumberTile({
-    required this.number,
-    required this.row,
-    required this.col,
-    required this.tilesize,
-    required this.onTapTile,
-  }) {
-    position = Vector2(col * tilesize, row * tilesize);
-    size = Vector2.all(tilesize);
-  }
-
-  @override
-  void onTapDown(TapDownEvent event) {
-    if (number != null) onTapTile(row, col);
-  }
-
-  @override
-  void render(Canvas canvas) {
-    if (number == null) return;
-    final rect = size.toRect().deflate(2);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, const Radius.circular(8)),
-      Paint()..color = const Color(0xFF2D323E),
-    );
-
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: '$number',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    textPainter.paint(
-      canvas,
-      Offset(
-        size.x / 2 - textPainter.width / 2,
-        size.y / 2 - textPainter.height / 2,
-      ),
-    );
   }
 }
