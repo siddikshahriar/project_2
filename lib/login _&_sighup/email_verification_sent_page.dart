@@ -12,32 +12,39 @@ class EmailVerificationSentPage extends StatefulWidget {
 }
 
 class _EmailVerificationSentPageState extends State<EmailVerificationSentPage> {
-  bool _isResending = false;
+  final otpController = TextEditingController();
+  bool _loading = false;
 
-  Future<void> _resendVerificationEmail() async {
-    setState(() => _isResending = true);
-    try {
-      await Supabase.instance.client.auth.resend(
-        type: OtpType.signup,
-        email: widget.email,
-        emailRedirectTo: 'com.neurogym.app://callback',
+  Future<void> verifyOtp() async {
+    setState(() => _loading = true);
+
+    final res = await Supabase.instance.client.auth.verifyOTP(
+      email: widget.email,
+      token: otpController.text.trim(),
+      type: OtpType.signup,
+    );
+
+    setState(() => _loading = false);
+
+    if (res.session != null) {
+      await Supabase.instance.client.auth.signOut();
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+            (_) => false,
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Verification email sent again!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } on AuthException catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-        );
-    } finally {
-      if (mounted) setState(() => _isResending = false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invalid OTP"), backgroundColor: Colors.red),
+      );
     }
+  }
+
+  Future<void> resendOtp() async {
+    await Supabase.instance.client.auth.resend(
+      type: OtpType.signup,
+      email: widget.email,
+    );
   }
 
   @override
@@ -49,63 +56,30 @@ class _EmailVerificationSentPageState extends State<EmailVerificationSentPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.mark_email_unread, color: Colors.cyan, size: 80),
-            const SizedBox(height: 24),
-            const Text(
-              "Verify Your Email",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            const Text("Enter Email OTP",
+                style: TextStyle(color: Colors.white, fontSize: 22)),
+            const SizedBox(height: 20),
+            TextField(
+              controller: otpController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: "6 digit OTP",
+                filled: true,
+                fillColor: Colors.grey,
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              "We've sent a verification link to\n${widget.email}",
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loading ? null : verifyOtp,
+              child: _loading
+                  ? const CircularProgressIndicator()
+                  : const Text("Verify"),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              "Click the link in the email to verify your account.\nAfter clicking, you will be redirected to the login page.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white54, fontSize: 12),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.cyan,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                onPressed: _isResending ? null : _resendVerificationEmail,
-                child: _isResending
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text(
-                        "Resend Email",
-                        style: TextStyle(fontSize: 16),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 16),
             TextButton(
-              onPressed: () => Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-                (route) => false,
-              ),
-              child: const Text(
-                "Back to Login",
-                style: TextStyle(color: Colors.green),
-              ),
+              onPressed: resendOtp,
+              child: const Text("Resend OTP",
+                  style: TextStyle(color: Colors.cyan)),
             ),
           ],
         ),

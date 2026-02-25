@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login _&_sighup/login_page.dart';
 import 'games/neurogym.dart';
 import 'games/path_finder/path_finder_dashboard.dart';
+import 'profile_page.dart';
 
 enum GameType { blackShelby, numberMatching, pathFinder }
 
@@ -21,6 +22,18 @@ class HomePage extends StatelessWidget {
           style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
+        leading: IconButton(
+          icon: const CircleAvatar(
+            backgroundColor: Colors.grey,
+            child: Icon(Icons.person, color: Colors.white),
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
+            );
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -30,7 +43,7 @@ class HomePage extends StatelessWidget {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (_) => const LoginPage()),
-                  (route) => false,
+                      (route) => false,
                 );
               }
             },
