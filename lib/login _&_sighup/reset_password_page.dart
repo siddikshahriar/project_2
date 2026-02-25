@@ -3,98 +3,92 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_page.dart';
 
 class ResetPasswordPage extends StatefulWidget {
-  const ResetPasswordPage({super.key});
+  final String email;
+  const ResetPasswordPage({super.key, required this.email});
 
   @override
   State<ResetPasswordPage> createState() => _ResetPasswordPageState();
 }
 
 class _ResetPasswordPageState extends State<ResetPasswordPage> {
-  final newPasswordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final otpController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmController = TextEditingController();
   bool _isLoading = false;
+  bool _otpVerified = false;
 
-  final RegExp passwordRegex = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
-  );
-
-  @override
-  void dispose() {
-    newPasswordController.dispose();
-    confirmPasswordController.dispose();
-    super.dispose();
-  }
-
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Password is required';
-    }
-    if (!passwordRegex.hasMatch(value)) {
-      return 'Min 8 chars with uppercase, lowercase, number & special char';
-    }
-    return null;
-  }
-
-  String? _validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please confirm your password';
-    }
-    if (value != newPasswordController.text) {
-      return 'Passwords do not match';
-    }
-    return null;
-  }
-
-  Future<void> _resetPassword() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
+  Future<void> _verifyOtp() async {
+    setState(() => _isLoading = true);
     try {
-      await Supabase.instance.client.auth.updateUser(
-        UserAttributes(password: newPasswordController.text),
+      final res = await Supabase.instance.client.auth.verifyOTP(
+        email: widget.email,
+        token: otpController.text.trim(),
+        type: OtpType.recovery,
       );
 
-      // Sign out after password reset
-      await Supabase.instance.client.auth.signOut();
-
-      if (mounted) {
+      if (res.session != null) {
+        setState(() => _otpVerified = true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password reset successfully! Please login.'),
-            backgroundColor: Colors.green,
-          ),
+          const SnackBar(content: Text('OTP verified! Enter new password.')),
         );
-
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-          (route) => false,
-        );
-      }
-    } on AuthException catch (e) {
-      if (mounted) {
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Invalid OTP')),
         );
       }
     } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error verifying OTP: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _updatePassword() async {
+    final password = passwordController.text.trim();
+    final confirm = confirmController.text.trim();
+
+    if (password.isEmpty || confirm.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill both fields')),
+      );
+      return;
+    }
+
+    if (password != confirm) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(password: password),
+      );
+      await Supabase.instance.client.auth.signOut();
+
       if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+              (_) => false,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('Password updated successfully! Please login.'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating password: $e')),
+      );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      setState(() => _isLoading = false);
     }
   }
 
@@ -104,77 +98,135 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       backgroundColor: Colors.black,
       body: Padding(
         padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (!_otpVerified) ...[
               const Text(
-                "Reset Password",
+                "Enter OTP",
                 style: TextStyle(
+                  color: Colors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                "Enter your new password below",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-              const SizedBox(height: 32),
-              TextFormField(
-                controller: newPasswordController,
-                validator: _validatePassword,
-                obscureText: true,
+              const SizedBox(height: 16),
+              TextField(
+                controller: otpController,
                 style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: "OTP",
+                  filled: true,
+                  fillColor: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _verifyOtp,
+                      child: _isLoading
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                          : const Text("Verify OTP"),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                      ),
+                      onPressed: _isLoading
+                          ? null
+                          : () async {
+                        try {
+                          await Supabase.instance.client.auth
+                              .resetPasswordForEmail(widget.email);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text(
+                                    'OTP resent! Check your email.')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content:
+                                Text('Failed to resend OTP: $e')),
+                          );
+                        }
+                      },
+                      child: _isLoading
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                          : const Text("Resend OTP"),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              const Text(
+                "Enter New Password",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                style: const TextStyle(color: Colors.white),
+                obscureText: true,
                 decoration: const InputDecoration(
                   hintText: "New Password",
                   filled: true,
                   fillColor: Colors.grey,
-                  errorStyle: TextStyle(color: Colors.redAccent),
                 ),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: confirmPasswordController,
-                validator: _validateConfirmPassword,
-                obscureText: true,
+              const SizedBox(height: 16),
+              TextField(
+                controller: confirmController,
                 style: const TextStyle(color: Colors.white),
+                obscureText: true,
                 decoration: const InputDecoration(
-                  hintText: "Confirm New Password",
+                  hintText: "Confirm Password",
                   filled: true,
                   fillColor: Colors.grey,
-                  errorStyle: TextStyle(color: Colors.redAccent),
                 ),
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.cyan,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  onPressed: _isLoading ? null : _resetPassword,
+                  onPressed: _isLoading ? null : _updatePassword,
                   child: _isLoading
                       ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          "Reset Password",
-                          style: TextStyle(fontSize: 16),
-                        ),
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text("Set Password"),
                 ),
               ),
-            ],
-          ),
+            ]
+          ],
         ),
       ),
     );
