@@ -4,18 +4,19 @@ import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
+/// defines the Numbertile component
+/// tile size are fixed, camera is adjusted to fit the screen
 class NumberTile extends PositionComponent with TapCallbacks {
   final int? number;
   final int row;
   final int col;
-  final double tilesize;
+  final double tilesize = 100;
   final Function(int, int) onTapTile;
 
   NumberTile({
     required this.number,
     required this.row,
     required this.col,
-    required this.tilesize,
     required this.onTapTile,
   }) {
     position = Vector2(col * tilesize, row * tilesize);

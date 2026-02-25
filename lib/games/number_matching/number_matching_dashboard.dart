@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../neurogym.dart';
 
+/// implements the dashboard as a HUD
+/// contains multiple difficulty levels
 class NumberMatchingDashboard extends StatelessWidget {
   final NeuroGym game;
   const NumberMatchingDashboard({super.key, required this.game});
@@ -27,9 +29,10 @@ class NumberMatchingDashboard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            _difficultyButton(context, "Easy (3x3)", 3),
-            _difficultyButton(context, "Medium (4x4)", 4),
-            _difficultyButton(context, "Hard (5x5)", 5),
+            _difficultyButton(context, "Easy (2x2)", 2),
+            _difficultyButton(context, "Medium (3x3)", 3),
+            _difficultyButton(context, "Hard (4x4)", 4),
+            _difficultyButton(context, "Super Hard(5x5)", 5),
           ],
         ),
       ),

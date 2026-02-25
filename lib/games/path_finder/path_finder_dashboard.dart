@@ -45,7 +45,7 @@ class _PathFinderDashboardState extends State<PathFinderDashboard> {
 
   Widget _buildLevelCard(int levelNumber, dynamic levelData) {
     return InkWell(
-      onTap: () => _startLevel(levelData),
+      onTap: () => widget.game.startPathFinder(levelData),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
@@ -80,9 +80,5 @@ class _PathFinderDashboardState extends State<PathFinderDashboard> {
         ),
       ),
     );
-  }
-
-  void _startLevel(dynamic levelData) {
-    widget.game.startPathFinder(levelData);
   }
 }

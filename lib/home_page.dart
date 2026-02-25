@@ -8,6 +8,7 @@ import 'games/path_finder/path_finder_dashboard.dart';
 
 enum GameType { blackShelby, numberMatching, pathFinder }
 
+/// homepage is where all the available games are listed
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
   @override
@@ -22,6 +23,7 @@ class HomePage extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
+          /// the signout button
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
@@ -37,6 +39,8 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
+
+      /// all the games are listed in a grid view containing 2 columns for each row
       body: GridView.count(
         crossAxisCount: 2,
         padding: const EdgeInsets.all(16),
@@ -54,7 +58,10 @@ class HomePage extends StatelessWidget {
             _navigateToGame(
               context,
               GameWidget<NeuroGym>(
+                /// creates a game instance of type numbermatching which extends FlameGame
                 game: NeuroGym(gameType: GameType.numberMatching),
+
+                /// overlay for dashboard and additonal buttons to show over game world
                 overlayBuilderMap: {
                   'NumberMatchingDashboard': (context, game) =>
                       NumberMatchingDashboard(game: game),
@@ -87,6 +94,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  /// and additional game screen where each game will show up
   Widget _centeredGameScreen(Widget gameWidget) {
     return Scaffold(
       backgroundColor: const Color(0xFF0D1117), // Deeper dark theme
@@ -121,6 +129,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  /// makes a rectangular card for each game
   Widget _gameCard(String title, String image, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,

@@ -8,8 +8,9 @@ import 'package:project_2/games/path_finder/pathfinder_levels.dart';
 import 'package:project_2/games/path_finder/pathfinder_player.dart';
 import 'package:flame/input.dart';
 
+/// creates a pathfinder world
 class PathFinderWorld extends World
-    with HasGameReference<FlameGame>, TapCallbacks, KeyboardHandler {
+    with HasGameReference<FlameGame>, TapCallbacks {
   late final PathFinderLevel level;
   final double tileSize = 50;
   late List<List<String>> grid;
@@ -22,6 +23,8 @@ class PathFinderWorld extends World
   late TextComponent moveCounterText;
   late TextComponent winText;
   List<Point> pathHistory = [];
+
+  /// stores the current path of player
   late int rows;
   late int cols;
 
@@ -43,6 +46,7 @@ class PathFinderWorld extends World
     _initHUD();
   }
 
+  /// move counter and win text HUD
   void _initHUD() {
     moveCounterText = TextComponent(
       text: 'Moves: 0',
@@ -75,6 +79,7 @@ class PathFinderWorld extends World
     add(winText);
   }
 
+  /// building the innitial maze
   void _buildMaze() {
     for (int i = 0; i < grid.length; i++) {
       for (int j = 0; j < grid[i].length; j++) {
@@ -91,6 +96,7 @@ class PathFinderWorld extends World
     }
   }
 
+  /// build the player component
   void _buildPlayer() {
     playerComp = PlayerComponent(
       row: player.r,
@@ -100,11 +106,13 @@ class PathFinderWorld extends World
     add(playerComp);
   }
 
+  /// compares the tapped cell location with the players current position
+  /// to determine the intended direction
   @override
   void onTapDown(TapDownEvent event) {
     if (gameWon) return;
     final pos = event.localPosition;
-    final center = playerComp.position + Vector2.all(tileSize / 2);
+    final center = playerComp.position + Vector2(tileSize / 2, tileSize / 2);
     final dx = pos.x - center.x;
     final dy = pos.y - center.y;
 
@@ -115,6 +123,8 @@ class PathFinderWorld extends World
     }
   }
 
+  /// executes player move to the (dr,dc) direction
+  /// until it hits any wall or lands on a junction
   void move(int dr, int dc) {
     if (gameWon) return;
     int r = player.r;
@@ -132,6 +142,9 @@ class PathFinderWorld extends World
       moved = true;
 
       Point currentPoint = Point(r, c);
+
+      /// delets path history in case of backword traversal
+      /// or adds the cell to the path history
       if (pathHistory.length > 1 &&
           pathHistory[pathHistory.length - 2] == currentPoint) {
         pathHistory.removeLast();
@@ -140,10 +153,15 @@ class PathFinderWorld extends World
           pathHistory.add(currentPoint);
         }
       }
+
+      /// multiple path to go
       if (_isJunction(r, c)) break;
+
+      /// player reached at the end cell
       if (r == level.end.r && c == level.end.c) break;
     }
 
+    /// succesfull move
     if (moved) {
       moveCount++;
       moveCounterText.text = 'Moves: $moveCount';
@@ -154,6 +172,7 @@ class PathFinderWorld extends World
     }
   }
 
+  /// update the state of each tile
   void _updateTileHighlights() {
     children.whereType<MazeTile>().forEach((tile) {
       tile.highlight = pathHistory.any(
@@ -169,15 +188,7 @@ class PathFinderWorld extends World
     }
   }
 
-  @override
-  bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
-    if (event is KeyDownEvent &&
-        keysPressed.contains(LogicalKeyboardKey.keyR)) {
-      _restart();
-    }
-    return true;
-  }
-
+  /// restarting the game
   void _restart() {
     moveCount = 0;
     moveCounterText.text = 'Moves: 0';
@@ -189,6 +200,7 @@ class PathFinderWorld extends World
     _updateTileHighlights();
   }
 
+  /// a cell from where player can move in multiple direction
   bool _isJunction(int r, int c) {
     int paths = 0;
     List<List<int>> dirs = [

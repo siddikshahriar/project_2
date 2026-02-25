@@ -8,13 +8,15 @@ import 'package:project_2/home_page.dart';
 class NeuroGym extends FlameGame {
   final GameType gameType;
   NumberMatching? currentGameNumberMatching;
+
+  /// gametype is passed from home page through constructor
   NeuroGym({required this.gameType});
   @override
   Future<void> onLoad() async {
     super.onLoad();
     switch (gameType) {
       case GameType.numberMatching:
-        currentGameNumberMatching = NumberMatching(position: Vector2.zero());
+        currentGameNumberMatching = NumberMatching();
         add(currentGameNumberMatching!);
         break;
       case GameType.pathFinder:
@@ -37,6 +39,7 @@ class NeuroGym extends FlameGame {
     }
   }
 
+  /// creates pathfinder world and camera
   Future<void> startPathFinder(dynamic levelData) async {
     overlays.remove('PathFinderDashboard');
     world.removeAll(world.children);
@@ -57,17 +60,17 @@ class NeuroGym extends FlameGame {
     add(pfCamera);
   }
 
-  void restartNumberMatching() {
-    if (currentGameNumberMatching != null) {
-      if (currentGameNumberMatching!.camera != null) {
-        currentGameNumberMatching!.camera!.viewport.removeAll(
-          currentGameNumberMatching!.camera!.viewport.children,
-        );
-        currentGameNumberMatching!.camera!.removeFromParent();
-      }
-      currentGameNumberMatching!.removeFromParent();
-    }
-    currentGameNumberMatching = NumberMatching(position: Vector2.zero());
-    add(currentGameNumberMatching!);
-  }
+  // void restartNumberMatching() {
+  //   if (currentGameNumberMatching != null) {
+  //     if (currentGameNumberMatching!.camera != null) {
+  //       currentGameNumberMatching!.camera!.viewport.removeAll(
+  //         currentGameNumberMatching!.camera!.viewport.children,
+  //       );
+  //       currentGameNumberMatching!.camera!.removeFromParent();
+  //     }
+  //     currentGameNumberMatching!.removeFromParent();
+  //   }
+  //   currentGameNumberMatching = NumberMatching();
+  //   add(currentGameNumberMatching!);
+  // }
 }
