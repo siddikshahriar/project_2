@@ -60,14 +60,14 @@ class HomePage extends StatelessWidget {
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
         children: [
-          _gameCard("Black Shelby", "assets/black_shelby.png", () {
+          _gameCard("Black Shelby", "assets/icons/black_shelby.png", () {
             _navigateToGame(
               context,
               GameWidget(game: NeuroGym(gameType: GameType.blackShelby)),
             );
           }),
 
-          _gameCard("Number Matching", "assets/number_matching.png", () {
+          _gameCard("Number Matching", "assets/icons/number_matching.png", () {
             _navigateToGame(
               context,
               GameWidget<NeuroGym>(
@@ -83,7 +83,7 @@ class HomePage extends StatelessWidget {
             );
           }),
 
-          _gameCard("Path Finder", "assets/path_finder.png", () {
+          _gameCard("Path Finder", "assets/icons/path_finder.png", () {
             _navigateToGame(
               context,
               GameWidget<NeuroGym>(
