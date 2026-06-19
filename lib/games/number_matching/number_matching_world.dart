@@ -41,6 +41,23 @@ class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
     attachedCamera.viewport.add(countText);
   }
 
+  void buildGameRuleHUD() {
+    TextComponent gameRules = TextComponent(
+      text:
+          'Rearrange the blocks from top-left to bottom-right\n              in increasing order of numbers',
+      position: Vector2(n * 100 / 2, n * 100 + 100 + n * 10),
+      anchor: Anchor.center,
+      textRenderer: TextPaint(
+        style: TextStyle(
+          color: Colors.greenAccent,
+          fontSize: n * 3,
+          fontWeight: FontWeight.normal,
+        ),
+      ),
+    );
+    attachedCamera.viewport.add(gameRules);
+  }
+
   void buildFinalHUD() {
     finalText = TextComponent(
       text: 'PUZZLE SOLVED!!',

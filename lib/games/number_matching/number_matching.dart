@@ -42,5 +42,6 @@ class NumberMatching extends Component with HasGameReference<FlameGame> {
     await game.add(camera!);
     (world as NumberMatchingWorld).attachedCamera = camera!;
     (world as NumberMatchingWorld).buildCountHUD();
+    (world as NumberMatchingWorld).buildGameRuleHUD();
   }
 }

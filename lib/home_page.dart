@@ -45,7 +45,7 @@ class HomePage extends StatelessWidget {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (_) => const LoginPage()),
-                      (route) => false,
+                  (route) => false,
                 );
               }
             },
@@ -118,12 +118,12 @@ class HomePage extends StatelessWidget {
       ),
       body: Center(
         child: Container(
-          margin: const EdgeInsets.all(16),
-          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 1000),
+          margin: const EdgeInsets.all(4),
+          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 1800),
           decoration: BoxDecoration(
             color: const Color(0xFF161B22),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white.withOpacity(0.1), width: 2),
+            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.6),
@@ -132,7 +132,7 @@ class HomePage extends StatelessWidget {
               ),
             ],
           ),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(5),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: AspectRatio(aspectRatio: 0.5, child: gameWidget),

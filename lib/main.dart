@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_2/router/router_config.dart';
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
@@ -7,6 +8,7 @@ import 'login _&_sighup/reset_password_page.dart';
 import 'login _&_sighup/login_page.dart';
 import 'home_page.dart';
 import 'login _&_sighup/forgot_password_page.dart';
+import 'package:go_router/go_router.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -21,20 +23,35 @@ void main() async {
   runApp(const MyApp());
 }
 
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: 'NeuroGym',
+//       debugShowCheckedModeBanner: false,
+//       theme: ThemeData.dark(),
+//       home: const SplashScreen(),
+//       routes: {
+//         '/forgot-password': (_) =>
+//             const ForgotPasswordPage(), // <-- route for forgot password
+//       },
+//     );
+//   }
+// }
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'NeuroGym',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      home: const SplashScreen(),
-      routes: {
-        '/forgot-password': (_) =>
-            const ForgotPasswordPage(), // <-- route for forgot password
-      },
+      routeInformationParser: MyAppRouter().router.routeInformationParser,
+      routerDelegate: MyAppRouter().router.routerDelegate,
     );
   }
 }

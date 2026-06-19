@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'reset_password_page.dart'; // Navigate to reset password page
+import 'reset_password_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -36,12 +36,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
     setState(() => _isLoading = true);
     try {
-      // Supabase sends OTP (rate-limited)
       await Supabase.instance.client.auth.resetPasswordForEmail(
         emailController.text.trim(),
       );
 
-      // Navigate to Reset Password page with email
       if (mounted) {
         Navigator.push(
           context,
@@ -55,7 +53,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              'If this email exists, an OTP has been sent. Please check your inbox.'),
+            'If this email exists, an OTP has been sent. Please check your inbox.',
+          ),
         ),
       );
     } finally {
@@ -113,17 +112,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   onPressed: _isLoading ? null : _sendOtp,
                   child: _isLoading
                       ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                      : const Text(
-                    "Send OTP",
-                    style: TextStyle(fontSize: 16),
-                  ),
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text("Send OTP", style: TextStyle(fontSize: 16)),
                 ),
               ),
             ],
