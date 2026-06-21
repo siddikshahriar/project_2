@@ -1,14 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_2/router/router_config.dart';
-import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:app_links/app_links.dart';
-import 'splash_screen.dart';
-import 'login _&_sighup/reset_password_page.dart';
-import 'login _&_sighup/login_page.dart';
-import 'home_page.dart';
-import 'login _&_sighup/forgot_password_page.dart';
-import 'package:go_router/go_router.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 

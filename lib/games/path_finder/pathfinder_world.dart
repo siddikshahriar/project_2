@@ -2,11 +2,9 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:project_2/games/path_finder/maze_tile.dart';
 import 'package:project_2/games/path_finder/pathfinder_levels.dart';
 import 'package:project_2/games/path_finder/pathfinder_player.dart';
-import 'package:flame/input.dart';
 
 /// creates a pathfinder world
 class PathFinderWorld extends World
@@ -134,8 +132,9 @@ class PathFinderWorld extends World
     while (true) {
       int nr = r + dr;
       int nc = c + dc;
-      if (nr < 0 || nr >= rows || nc < 0 || nc >= cols || grid[nr][nc] == "#")
+      if (nr < 0 || nr >= rows || nc < 0 || nc >= cols || grid[nr][nc] == "#") {
         break;
+      }
 
       r = nr;
       c = nc;

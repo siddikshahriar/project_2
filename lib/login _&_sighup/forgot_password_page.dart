@@ -26,8 +26,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) return 'Email is required';
-    if (!emailRegex.hasMatch(value.trim()))
+    if (!emailRegex.hasMatch(value.trim())) {
       return 'Enter a valid email address';
+    }
     return null;
   }
 
