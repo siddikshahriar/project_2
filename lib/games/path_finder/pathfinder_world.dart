@@ -7,6 +7,8 @@ import 'package:project_2/games/path_finder/maze_tile.dart';
 import 'package:project_2/games/path_finder/pathfinder_levels.dart';
 import 'package:project_2/games/path_finder/pathfinder_player.dart';
 import 'package:flame/input.dart';
+import 'package:project_2/services/local_progress_store.dart';
+import 'package:project_2/services/progress_sync_service.dart';
 
 /// creates a pathfinder world
 class PathFinderWorld extends World
@@ -185,7 +187,24 @@ class PathFinderWorld extends World
     if (player.r == level.end.r && player.c == level.end.c) {
       gameWon = true;
       winText.text = 'LEVEL COMPLETE!';
+      _saveProgress();
     }
+  }
+
+  /// remembers that this level was completed, on this device
+  Future<void> _saveProgress() async {
+    final existing = LocalProgressStore.loadProgress('path_finder');
+    final completed = existing != null
+        ? List<int>.from(existing['completed_levels'] ?? [])
+        : <int>[];
+    if (!completed.contains(level.id)) completed.add(level.id);
+
+    await LocalProgressStore.saveProgress('path_finder', {
+      'completed_levels': completed,
+      'last_level_id': level.id,
+      'last_moves': moveCount,
+    });
+    ProgressSyncService.syncNow(); // pushes now if online; quietly skipped if not
   }
 
   /// restarting the game

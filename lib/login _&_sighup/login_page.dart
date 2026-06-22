@@ -3,6 +3,7 @@ import 'signup_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../home_page.dart';
 import 'forgot_password_page.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -70,12 +71,10 @@ class _LoginPageState extends State<LoginPage> {
 
       if (res.session != null) {
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomePage()),
-          );
+          context.go('/');
         }
       }
+
     } on AuthException catch (e) {
       if (mounted) {
         String message = e.message;

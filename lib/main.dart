@@ -3,6 +3,7 @@ import 'package:project_2/router/router_config.dart';
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'splash_screen.dart';
 import 'login _&_sighup/reset_password_page.dart';
 import 'login _&_sighup/login_page.dart';
@@ -15,9 +16,15 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // local, on-device storage for offline game progress and the
+  // last-known list of games (used when there is no internet)
+  await Hive.initFlutter();
+  await Hive.openBox('game_progress_box');
+  await Hive.openBox('games_catalog_box');
+
   await Supabase.initialize(
-    url: 'https://uglqgzxgltwtaiwmgmsj.supabase.co',
-    anonKey: 'sb_publishable_fJZ4dL13vCRdosLmGVmALQ_7AOkGNtJ',
+    url: 'https://uvycbfdnjvzleikvcgzn.supabase.co',
+    anonKey: 'sb_publishable_g7zFmsN835t9qAzbdqAhLw_vHT0yeJn',
   );
 
   runApp(const MyApp());
@@ -50,8 +57,8 @@ class MyApp extends StatelessWidget {
       title: 'NeuroGym',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      routeInformationParser: MyAppRouter().router.routeInformationParser,
-      routerDelegate: MyAppRouter().router.routerDelegate,
+      routeInformationParser: MyAppRouter.router.routeInformationParser,
+      routerDelegate: MyAppRouter.router.routerDelegate,
     );
   }
 }

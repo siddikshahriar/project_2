@@ -6,6 +6,7 @@ import 'login _&_sighup/login_page.dart';
 import 'games/neurogym.dart';
 import 'games/path_finder/path_finder_dashboard.dart';
 import 'profile_page.dart';
+import 'package:go_router/go_router.dart';
 
 enum GameType { blackShelby, numberMatching, pathFinder }
 
@@ -14,6 +15,7 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
   @override
   Widget build(BuildContext context) {
+    //print("HomePage build called");
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -37,16 +39,12 @@ class HomePage extends StatelessWidget {
         ),
         actions: [
           /// the signout button
-          IconButton(
+            IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
               await Supabase.instance.client.auth.signOut();
               if (context.mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                  (route) => false,
-                );
+                context.go('/login');
               }
             },
           ),
