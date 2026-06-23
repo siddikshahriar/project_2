@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'package:project_2/games/block_breaker/block_breaker_world.dart';
+import 'package:project_2/games/block_breaker/world.dart';
 
 class StarComponent extends PositionComponent {
   StarComponent({required Vector2 position})

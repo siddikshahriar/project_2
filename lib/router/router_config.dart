@@ -7,7 +7,7 @@ import 'package:project_2/home_page.dart';
 import 'package:project_2/profile_page.dart';
 import 'package:project_2/splash_screen.dart';
 import 'router_constants.dart';
-import 'package:project_2/games/block_breaker/game_screen.dart';
+import 'package:project_2/games/block_breaker/block_breaker.dart';
 
 // 1. UTILITY CLASS: Implements Listenable to convert streams safely for GoRouter
 class GoRouterRefreshStream extends ChangeNotifier {

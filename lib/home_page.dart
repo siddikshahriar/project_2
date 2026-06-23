@@ -1,11 +1,11 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:project_2/games/number_matching/number_matching_dashboard.dart';
+import 'package:project_2/games/number_matching/dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'games/neurogym.dart';
-import 'games/path_finder/path_finder_dashboard.dart';
+import 'games/path_finder/dashboard.dart';
 import 'profile_page.dart';
-import 'games/block_breaker/block_breaker_dashboard.dart';
+import 'games/block_breaker/dashboard.dart';
 import 'package:go_router/go_router.dart';
 
 enum GameType { blockBreaker, numberMatching, pathFinder }

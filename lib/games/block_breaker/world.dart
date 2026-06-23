@@ -4,11 +4,15 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'block_breaker.dart';
 import 'components/ball_component.dart';
 import 'components/brick_component.dart';
 import 'components/paddle_component.dart';
 import 'components/star_component.dart';
+import 'components/aim_line_component.dart';
+import 'restart_overlay.dart';
+import 'levels.dart';
 
 class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
   int level;
@@ -23,6 +27,11 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
   static const int startingLives = 3;
   static const double ballSpeed = 350;
   static const double starFallSpeed = 140;
+
+  /// tilt-control constants
+  static const double tiltDeadZone = 0.4; // ignore tiny jitter when held flat
+  static const double tiltSensitivity =
+      120.0; // px/s of paddle speed per m/s^2 of tilt
 
   /// game states
   int lives = startingLives;
@@ -39,10 +48,27 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
   final List<BrickComponent> bricks = [];
   final List<StarComponent> stars = [];
 
+  StreamSubscription<AccelerometerEvent>? _accelSubscription;
+  double _tiltX = 0;
+
   @override
   Future<void> onLoad() async {
     super.onLoad();
     _setupLevel();
+    _listenToTilt();
+  }
+
+  @override
+  void onRemove() {
+    _accelSubscription?.cancel();
+    super.onRemove();
+  }
+
+  void _listenToTilt() {
+    _accelSubscription?.cancel();
+    _accelSubscription = accelerometerEventStream().listen((event) {
+      _tiltX = event.x;
+    });
   }
 
   // Builds (or rebuilds, on restart) everything the level needs.
@@ -59,6 +85,7 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
     ballsLaunched = false;
     gameOver = false;
     aimDirX = 0;
+    _tiltX = 0;
 
     // 1. Add a dark slate background canvas
     add(
@@ -79,7 +106,13 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
     // 4. HUD (score + lives)
     _buildHud();
 
-    // 5. Full-arena input layer: drags move the paddle and, before launch,
+    // 5. Aim line: a dedicated, high-priority child so it draws ON TOP of
+    //    the background/bricks/paddle instead of being drawn straight from
+    //    World.render() (which runs *before* children and was getting
+    //    painted over by the opaque background rectangle every frame).
+    add(AimLineComponent(world: this));
+
+    // 6. Full-arena input layer: drags move the paddle and, before launch,
     //    tilt the aim line. Releasing fires the ball(s).
     add(
       InputLayer(
@@ -102,34 +135,7 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
 
     // Multi-dimensional matrices representing distinct layout designs per level
     // 1 = Block exists, 0 = Empty air space
-    final List<List<int>> levelLayout;
-
-    if (level == 1) {
-      // Level 1 Pattern: Simple Solid Wall (3 rows x 5 columns)
-      levelLayout = [
-        [1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1],
-      ];
-    } else if (level == 2) {
-      // Level 2 Pattern: Space Invader / Checkered Pyramid Shape
-      levelLayout = [
-        [0, 1, 1, 1, 0],
-        [1, 0, 1, 0, 1],
-        [1, 1, 0, 1, 1],
-        [1, 0, 0, 0, 1],
-      ];
-    } else {
-      // Fallback Default Grid
-      levelLayout = [
-        [1, 0, 1, 0, 1],
-        [0, 1, 0, 1, 0],
-      ];
-    }
+    final BlockBreakerLevels allLevels = BlockBreakerLevels();
 
     // Assign different accent colors based on grid tier rows
     final List<Color> rowColors = [
@@ -140,16 +146,24 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
     ];
 
     // Iterative matrix translation loop converting numbers into physical game components
-    for (int row = 0; row < levelLayout.length; row++) {
-      for (int col = 0; col < levelLayout[row].length; col++) {
-        if (levelLayout[row][col] == 1) {
+    for (
+      int row = 0;
+      row < allLevels.levelList[level - 1].layout.length;
+      row++
+    ) {
+      for (
+        int col = 0;
+        col < allLevels.levelList[level - 1].layout[row].length;
+        col++
+      ) {
+        if (allLevels.levelList[level - 1].layout[row][col] == 1) {
           final double posX = startX + (col * (brickWidth + spacing));
           final double posY = startY + (row * (brickHeight + spacing));
 
           final brickColor = rowColors[row % rowColors.length];
 
           // Roughly 1 in 4 bricks is a special "star" brick.
-          final bool isSpecial = (row + col) % 4 == 0;
+          final bool isSpecial = (row + col) % 10 == 0;
 
           final brick = BrickComponent(
             position: Vector2(posX, posY),
@@ -227,6 +241,9 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
     super.update(dt);
     if (gameOver) return;
 
+    // Phone-tilt steering, layered on top of drag input.
+    _applyTiltControl(dt);
+
     // Resting balls ride along with the paddle, fanned out a little if
     // there's more than one waiting to launch.
     for (final ball in activeBalls) {
@@ -264,53 +281,19 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
     }
   }
 
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-    if (!ballsLaunched && !gameOver) {
-      _drawAimLine(canvas);
-    }
-  }
+  /// Tilting the phone side to side nudges the paddle, exactly like a
+  /// continuous drag. Works at the same time as touch dragging - whichever
+  /// input moved last each frame wins, so they don't fight each other.
+  void _applyTiltControl(double dt) {
+    if (_tiltX.abs() < tiltDeadZone) return;
 
-  void _drawAimLine(Canvas canvas) {
-    if (activeBalls.isEmpty) return;
-    final ball = activeBalls.first;
-    final dir = Vector2(aimDirX, -1).normalized();
-    const lineLength = 140.0;
-    final start = ball.position + dir * (ball.radius + 4);
-    final end = ball.position + dir * lineLength;
-
-    final linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.6)
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    // Dashed line effect
-    const dashLength = 10.0;
-    const gapLength = 6.0;
-    final totalLength = (end - start).length;
-    final step = dir * (dashLength + gapLength);
-    var cursor = start.clone();
-    var drawn = 0.0;
-    while (drawn < totalLength) {
-      final dashEnd = cursor + dir * dashLength;
-      canvas.drawLine(
-        Offset(cursor.x, cursor.y),
-        Offset(dashEnd.x, dashEnd.y),
-        linePaint,
-      );
-      cursor = cursor + step;
-      drawn += dashLength + gapLength;
-    }
-
-    // Arrow head pointing in the launch direction
-    final arrowPaint = Paint()..color = Colors.white.withOpacity(0.85);
-    final arrowPath = Path()
-      ..moveTo(end.x, end.y)
-      ..lineTo(end.x - dir.x * 10 - dir.y * 6, end.y - dir.y * 10 + dir.x * 6)
-      ..lineTo(end.x - dir.x * 10 + dir.y * 6, end.y - dir.y * 10 - dir.x * 6)
-      ..close();
-    canvas.drawPath(arrowPath, arrowPaint);
+    final halfPaddle = paddle.size.x / 2;
+    // Tilting the top of the phone to the right produces a negative
+    // accelerometer x reading on most devices held in portrait, so this is
+    // inverted to feel natural. Flip the sign below if it feels backwards
+    // on your device.
+    paddle.position.x = (paddle.position.x - _tiltX * tiltSensitivity * dt)
+        .clamp(-arenaWidth / 2 + halfPaddle, arenaWidth / 2 - halfPaddle);
   }
 
   void handleDrag(Vector2 delta) {
@@ -547,70 +530,5 @@ class InputLayer extends PositionComponent with DragCallbacks {
   @override
   void onDragEnd(DragEndEvent event) {
     world.handleDragEnd();
-  }
-}
-
-/// Game Over / Level Complete overlay with a tap-to-restart prompt.
-class RestartOverlay extends PositionComponent with TapCallbacks {
-  final BlockBreakerWorld world;
-  final String title;
-  final String subtitle;
-
-  RestartOverlay({
-    required this.world,
-    required this.title,
-    required this.subtitle,
-    required Vector2 position,
-    required Vector2 size,
-  }) : super(position: position, size: size, anchor: Anchor.topLeft) {
-    priority = 100;
-  }
-
-  @override
-  void render(Canvas canvas) {
-    canvas.drawRect(
-      size.toRect(),
-      Paint()..color = Colors.black.withOpacity(0.7),
-    );
-
-    TextPaint(
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 36,
-        fontWeight: FontWeight.bold,
-      ),
-    ).render(
-      canvas,
-      title,
-      Vector2(size.x / 2, size.y / 2 - 40),
-      anchor: Anchor.center,
-    );
-
-    TextPaint(
-      style: const TextStyle(color: Colors.white70, fontSize: 18),
-    ).render(
-      canvas,
-      subtitle,
-      Vector2(size.x / 2, size.y / 2),
-      anchor: Anchor.center,
-    );
-
-    TextPaint(
-      style: const TextStyle(
-        color: Color(0xFF54A0FF),
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-      ),
-    ).render(
-      canvas,
-      'TAP TO RESTART',
-      Vector2(size.x / 2, size.y / 2 + 50),
-      anchor: Anchor.center,
-    );
-  }
-
-  @override
-  void onTapUp(TapUpEvent event) {
-    world.restartGame();
   }
 }

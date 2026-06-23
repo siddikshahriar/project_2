@@ -1,30 +1,18 @@
+import 'package:flame/components.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
-import 'package:project_2/games/neurogym.dart';
-import 'package:project_2/games/path_finder/pathfinder_levels.dart';
+import 'package:project_2/router/router_config.dart';
+import 'levels.dart';
+import 'package:project_2/games/block_breaker/world.dart';
 
-class PathFinderDashboard extends StatefulWidget {
-  final NeuroGym game;
-  const PathFinderDashboard({super.key, required this.game});
-  @override
-  State<PathFinderDashboard> createState() => _PathFinderDashboardState();
-}
+class BlockBreakerDashboard extends StatelessWidget {
+  final BlockBreakerLevels allLevel = BlockBreakerLevels();
 
-class _PathFinderDashboardState extends State<PathFinderDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1D23),
-      appBar: AppBar(
-        title: const Text(
-          'Pathfinder Dashboard',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF23272F),
-        elevation: 0,
-      ),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
@@ -32,19 +20,24 @@ class _PathFinderDashboardState extends State<PathFinderDashboard> {
             mainAxisSpacing: 20,
             childAspectRatio: 1,
           ),
-          itemCount: PathFinderLevels.levels.length,
+          itemCount: allLevel.levelList.length,
           itemBuilder: (context, index) {
-            final level = PathFinderLevels.levels[index];
-            return _buildLevelCard(index + 1, level);
+            return _buildLevelCard(context, index + 1);
           },
         ),
       ),
     );
   }
 
-  Widget _buildLevelCard(int levelNumber, dynamic levelData) {
+  Widget _buildLevelCard(BuildContext context, levelNumber) {
     return InkWell(
-      onTap: () => widget.game.startPathFinder(levelData),
+      onTap: () {
+        GoRouter.of(context).pushNamed(
+          'block_breaker_gamescreen',
+          pathParameters: {'level': levelNumber.toString()},
+        );
+      },
+
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(

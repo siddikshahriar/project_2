@@ -4,8 +4,8 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:project_2/games/path_finder/maze_tile.dart';
-import 'package:project_2/games/path_finder/pathfinder_levels.dart';
-import 'package:project_2/games/path_finder/pathfinder_game_component.dart';
+import 'package:project_2/games/path_finder/levels.dart';
+import 'package:project_2/games/path_finder/component.dart';
 import 'package:flame/input.dart';
 import 'package:project_2/services/local_progress_store.dart';
 import 'package:project_2/services/progress_sync_service.dart';
@@ -165,7 +165,8 @@ class PathFinderWorld extends World
       Point nextp = Point(player.r + dr, player.c + dc);
       if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) break;
 
-      ///
+      /// auto walking condition
+      /// hit a wall and moved before and currently not in a junction
       if (grid[nextp.r][nextp.c] == "#" &&
           moved &&
           !_isJunction(player.r, player.c)) {
@@ -175,6 +176,7 @@ class PathFinderWorld extends World
           [0, 1],
           [0, -1],
         ];
+        bool foundWay = false;
         for (var d in dirs) {
           int nr = player.r + d[0];
           int nc = player.c + d[1];
@@ -187,11 +189,13 @@ class PathFinderWorld extends World
             lastp = player;
             player = Point(nr, nc);
             moved = true;
+            foundWay = true;
             dr = d[0];
             dc = d[1];
             break;
           }
         }
+        if (!foundWay) break;
         if (pathHistory.length > 1 &&
             pathHistory[pathHistory.length - 2] == player) {
           pathHistory.removeLast();
@@ -200,8 +204,14 @@ class PathFinderWorld extends World
             pathHistory.add(player);
           }
         }
+
+        /// player reached at the end cell
+        if (player.r == level.end.r && player.c == level.end.c) break;
         continue;
       }
+
+      /// multiple path to go
+      if (_isJunction(player.r, player.c) && moved) break;
 
       lastp = player;
       player = Point(nr, nc);
@@ -219,9 +229,6 @@ class PathFinderWorld extends World
           pathHistory.add(currentPoint);
         }
       }
-
-      /// multiple path to go
-      if (_isJunction(player.r, player.c)) break;
 
       /// player reached at the end cell
       if (player.r == level.end.r && player.c == level.end.c) break;

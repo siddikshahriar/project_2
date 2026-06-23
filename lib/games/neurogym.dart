@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:project_2/games/number_matching/number_matching.dart';
-import 'package:project_2/games/path_finder/pathfinder_world.dart';
+import 'package:project_2/games/path_finder/world.dart';
 import 'package:project_2/home_page.dart';
 
 class NeuroGym extends FlameGame {

@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
-import 'number_matching_world.dart';
+import 'world.dart';
 
 /// sets the game world,camera and HUDs
 class NumberMatching extends Component with HasGameReference<FlameGame> {
