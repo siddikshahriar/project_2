@@ -3,6 +3,7 @@ import 'signup_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../home_page.dart';
 import 'forgot_password_page.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -37,9 +38,9 @@ class _LoginPageState extends State<LoginPage> {
     if (value == null || value.isEmpty) {
       return 'Email is required';
     }
-    if (!emailRegex.hasMatch(value.trim())) {
-      return 'Enter a valid email address';
-    }
+    // if (!emailRegex.hasMatch(value.trim())) {
+    //   return 'Enter a valid email address';
+    // }
     return null;
   }
 
@@ -47,9 +48,9 @@ class _LoginPageState extends State<LoginPage> {
     if (value == null || value.isEmpty) {
       return 'Password is required';
     }
-    if (!passwordRegex.hasMatch(value)) {
-      return 'Password must be at least 8 characters with uppercase, lowercase, number, and special character';
-    }
+    // if (!passwordRegex.hasMatch(value)) {
+    //   return 'Password must be at least 8 characters with uppercase, lowercase, number, and special character';
+    // }
     return null;
   }
 
@@ -70,10 +71,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (res.session != null) {
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomePage()),
-          );
+          context.go('/');
         }
       }
     } on AuthException catch (e) {
@@ -89,7 +87,10 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('hmm..{$e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {

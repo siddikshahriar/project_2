@@ -2,11 +2,11 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:project_2/games/number_matching/number_matching_dashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login _&_sighup/login_page.dart';
 import 'games/neurogym.dart';
 import 'games/path_finder/path_finder_dashboard.dart';
 import 'profile_page.dart';
 import 'games/block_breaker/block_breaker_dashboard.dart';
+import 'package:go_router/go_router.dart';
 
 enum GameType { blockBreaker, numberMatching, pathFinder }
 
@@ -15,6 +15,7 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
   @override
   Widget build(BuildContext context) {
+    //print("HomePage build called");
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -43,11 +44,7 @@ class HomePage extends StatelessWidget {
             onPressed: () async {
               await Supabase.instance.client.auth.signOut();
               if (context.mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                  (route) => false,
-                );
+                GoRouter.of(context).goNamed('login');
               }
             },
           ),

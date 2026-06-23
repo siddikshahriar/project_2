@@ -28,127 +28,165 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadProfile();
   }
 
-  // Load user profile
+  @override
+  void dispose() {
+    nameController.dispose();
+    locationController.dispose();
+    bioController.dispose();
+    oldPasswordController.dispose();
+    newPasswordController.dispose();
+    super.dispose();
+  }
+
+  // Load profile (show dummy data if not logged in)
   Future<void> _loadProfile() async {
     final user = supabase.auth.currentUser;
-    if (user == null) return;
 
-    // Load name from auth metadata
+    if (user == null) {
+      nameController.text = "Guest User";
+      locationController.text = "Dhaka, Bangladesh";
+      bioController.text = "Welcome to NeuroGym! Edit this profile.";
+      setState(() => loading = false);
+      return;
+    }
+
     final first = user.userMetadata?['first_name'] ?? '';
     final last = user.userMetadata?['last_name'] ?? '';
     nameController.text = "$first $last".trim();
 
-    final data = await supabase
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .maybeSingle();
+    try {
+      final data = await supabase
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
 
-    if (data != null) {
-      locationController.text = data['location'] ?? '';
-      bioController.text = data['bio'] ?? '';
-      avatarUrl = data['avatar_url'];
-    } else {
-      await supabase.from('profiles').insert({
-        'id': user.id,
-        'email': user.email,
-      });
+      if (data != null) {
+        locationController.text = data['location'] ?? '';
+        bioController.text = data['bio'] ?? '';
+        avatarUrl = data['avatar_url'];
+      } else {
+        await supabase.from('profiles').insert({
+          'id': user.id,
+          'email': user.email,
+        });
+      }
+    } catch (e) {
+      print("Profile load error: $e");
+      locationController.text = "Error loading location";
+      bioController.text = "Error loading bio";
+    } finally {
+      setState(() => loading = false);
     }
-
-    setState(() => loading = false);
   }
 
-  // Pick profile image
+  // Pick image from gallery
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
-
-    print("Picked image path: ${file?.path}"); // DEBUG
-
     if (file == null) return;
 
-    final user = supabase.auth.currentUser!;
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login to change avatar")),
+      );
+      return;
+    }
+
     final fileName = '${user.id}.png';
 
     try {
-      // Upload using correct method for supabase_flutter >=1.0
       await supabase.storage.from('profile_pictures').upload(
-        fileName,
-        File(file.path),
-        fileOptions: const FileOptions(upsert: true),
-      );
+            fileName,
+            File(file.path),
+            fileOptions: const FileOptions(upsert: true),
+          );
 
-      final url =
-      supabase.storage.from('profile_pictures').getPublicUrl(fileName);
+      final url = supabase.storage.from('profile_pictures').getPublicUrl(fileName);
 
-      // Update profiles table
       await supabase
           .from('profiles')
           .update({'avatar_url': url})
           .eq('id', user.id);
 
       setState(() => avatarUrl = url);
-      print("Upload success, avatarUrl set: $url");
     } catch (e) {
       print("Upload failed: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Image upload failed: $e")),
+      );
     }
   }
 
-  // Save profile + password change
+  // Save profile and password changes
   Future<void> _saveProfile() async {
-    final user = supabase.auth.currentUser!;
-    final email = user.email!;
+    final user = supabase.auth.currentUser;
 
-    // Update profile table
-    await supabase.from('profiles').update({
-      'full_name': nameController.text.trim(),
-      'location': locationController.text.trim(),
-      'bio': bioController.text.trim(),
-    }).eq('id', user.id);
-
-    // Update Auth metadata name
-    final names = nameController.text.trim().split(" ");
-    await supabase.auth.updateUser(
-      UserAttributes(data: {
-        'first_name': names.first,
-        'last_name': names.length > 1 ? names.sublist(1).join(" ") : '',
-      }),
-    );
-
-    // Password change logic
-    if (oldPasswordController.text.isNotEmpty &&
-        newPasswordController.text.isNotEmpty) {
-      try {
-        // Verify old password by re-login
-        await supabase.auth.signInWithPassword(
-          email: email,
-          password: oldPasswordController.text.trim(),
-        );
-
-        await supabase.auth.updateUser(
-          UserAttributes(password: newPasswordController.text.trim()),
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Password updated")),
-        );
-      } catch (_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Old password is incorrect")),
-        );
-        return;
-      }
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login to save profile")),
+      );
+      return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Profile updated")),
-    );
+    final email = user.email!;
+
+    try {
+      // Update profile table
+      await supabase.from('profiles').update({
+        'full_name': nameController.text.trim(),
+        'location': locationController.text.trim(),
+        'bio': bioController.text.trim(),
+      }).eq('id', user.id);
+
+      // Update auth metadata
+      final names = nameController.text.trim().split(" ");
+      await supabase.auth.updateUser(
+        UserAttributes(data: {
+          'first_name': names.first,
+          'last_name': names.length > 1 ? names.sublist(1).join(" ") : '',
+        }),
+      );
+
+      // Handle password change
+      if (oldPasswordController.text.isNotEmpty &&
+          newPasswordController.text.isNotEmpty) {
+        try {
+          await supabase.auth.signInWithPassword(
+            email: email,
+            password: oldPasswordController.text.trim(),
+          );
+
+          await supabase.auth.updateUser(
+            UserAttributes(password: newPasswordController.text.trim()),
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Password updated successfully")),
+          );
+          oldPasswordController.clear();
+          newPasswordController.clear();
+        } catch (_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Old password is incorrect")),
+          );
+          return;
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile updated successfully")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving: $e")),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = supabase.auth.currentUser;
-
     if (loading) {
       return const Scaffold(
         backgroundColor: Colors.black,
@@ -161,23 +199,29 @@ class _ProfilePageState extends State<ProfilePage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text("Profile"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _saveProfile,
+            tooltip: 'Save',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: ListView(
           children: [
-            // Profile Image + Edit Button
+            // Profile image and edit button
             Center(
               child: Stack(
                 children: [
                   CircleAvatar(
                     radius: 60,
                     backgroundImage:
-                    avatarUrl != null ? NetworkImage(avatarUrl!) : null,
+                        avatarUrl != null ? NetworkImage(avatarUrl!) : null,
                     backgroundColor: Colors.grey,
                     child: avatarUrl == null
-                        ? const Icon(Icons.person,
-                        size: 60, color: Colors.white)
+                        ? const Icon(Icons.person, size: 60, color: Colors.white)
                         : null,
                   ),
                   Positioned(
@@ -188,18 +232,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: CircleAvatar(
                         radius: 18,
                         backgroundColor: Colors.cyan,
-                        child:
-                        const Icon(Icons.edit, size: 18, color: Colors.black),
+                        child: const Icon(Icons.edit, size: 18, color: Colors.black),
                       ),
                     ),
                   )
                 ],
               ),
             ),
-
             const SizedBox(height: 12),
-
-            // BIO (Separate Top Section)
             Center(
               child: Text(
                 bioController.text,
@@ -207,29 +247,20 @@ class _ProfilePageState extends State<ProfilePage> {
                 textAlign: TextAlign.center,
               ),
             ),
-
             const SizedBox(height: 20),
-
             _label("Full Name"),
             _field(nameController),
-
             _label("Email"),
-            _readonlyField(user?.email ?? ""),
-
+            _readonlyField(supabase.auth.currentUser?.email ?? "guest@example.com"),
             _label("Old Password"),
             _field(oldPasswordController, hide: true),
-
             _label("New Password"),
             _field(newPasswordController, hide: true),
-
             _label("Location"),
             _field(locationController),
-
             _label("Bio (max 60 chars)"),
             _bioField(),
-
             const SizedBox(height: 20),
-
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan),
               onPressed: _saveProfile,
@@ -241,7 +272,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Small label text
+  // Helper widgets
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),

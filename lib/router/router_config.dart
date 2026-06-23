@@ -1,22 +1,47 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:project_2/login%20_&_signup/login_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:project_2/home_page.dart';
 import 'package:project_2/profile_page.dart';
 import 'package:project_2/splash_screen.dart';
 import 'router_constants.dart';
 import 'package:project_2/games/block_breaker/game_screen.dart';
 
-class MyAppRouter {
-  GoRouter router = GoRouter(
-    routes: [
-      GoRoute(
-        name: RouteConstants.splashRouteName,
-        path: '/',
-        pageBuilder: (context, start) {
-          return MaterialPage(child: SplashScreen());
-        },
-      ),
+// 1. UTILITY CLASS: Implements Listenable to convert streams safely for GoRouter
+class GoRouterRefreshStream extends ChangeNotifier {
+  late final StreamSubscription<dynamic> _subscription;
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+      (dynamic _) => notifyListeners(),
+    );
+  }
 
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
+class MyAppRouter {
+  static final GoRouter router = GoRouter(
+    initialLocation: '/',
+
+    // refreshListenable: GoRouterRefreshStream(
+    //   Supabase.instance.client.auth.onAuthStateChange,
+    // ),
+    // redirect: (context, state) {
+    //   final loggedIn = Supabase.instance.client.auth.currentSession != null;
+    //   final goingToLogin = state.matchedLocation == '/login';
+
+    //   if (!loggedIn && !goingToLogin) return '/login';
+    //   if (loggedIn && goingToLogin) return '/';
+    //   return null;
+    // },
+    routes: [
       GoRoute(
         name: RouteConstants.homeRouteName,
         path: '/home_page',
@@ -24,7 +49,6 @@ class MyAppRouter {
           return MaterialPage(child: HomePage());
         },
       ),
-
       GoRoute(
         name: RouteConstants.profileRouteName,
         path: '/profile_page',
@@ -32,12 +56,18 @@ class MyAppRouter {
           return MaterialPage(child: ProfilePage());
         },
       ),
-
       GoRoute(
-        name: RouteConstants.loginRouteName,
-        path: '/login_&signup/login_page',
+        name: 'splash_screen',
+        path: '/',
         pageBuilder: (context, start) {
-          return MaterialPage(child: HomePage());
+          return MaterialPage(child: SplashScreen());
+        },
+      ),
+      GoRoute(
+        name: 'login',
+        path: '/login',
+        pageBuilder: (context, start) {
+          return MaterialPage(child: LoginPage());
         },
       ),
 

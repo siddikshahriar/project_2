@@ -1,10 +1,11 @@
 import 'dart:math';
 import 'package:flame/components.dart';
-import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:project_2/games/neurogym.dart';
 import 'package:project_2/games/number_matching/number_tile.dart';
+import 'package:project_2/services/local_progress_store.dart';
+import 'package:project_2/services/progress_sync_service.dart';
 
 class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
   final int n;
@@ -164,7 +165,24 @@ class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
       if (_isSolved()) {
         gameOver = true;
         buildFinalHUD();
+        _saveProgress();
       }
     }
+  }
+
+  /// remembers that this difficulty was completed, on this device
+  Future<void> _saveProgress() async {
+    final existing = LocalProgressStore.loadProgress('number_matching');
+    final completed = existing != null
+        ? List<int>.from(existing['completed_difficulties'] ?? [])
+        : <int>[];
+    if (!completed.contains(n)) completed.add(n);
+
+    await LocalProgressStore.saveProgress('number_matching', {
+      'completed_difficulties': completed,
+      'last_difficulty': n,
+      'last_moves': moves,
+    });
+    ProgressSyncService.syncNow(); // pushes now if online; quietly skipped if not
   }
 }

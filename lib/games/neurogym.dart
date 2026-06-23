@@ -1,6 +1,5 @@
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
-import 'package:flutter/material.dart';
 import 'package:project_2/games/number_matching/number_matching.dart';
 import 'package:project_2/games/path_finder/pathfinder_world.dart';
 import 'package:project_2/home_page.dart';
@@ -46,7 +45,7 @@ class NeuroGym extends FlameGame {
     children.whereType<CameraComponent>().forEach((c) => c.removeFromParent());
 
     final pfWorld = PathFinderWorld(levelData);
-    this.world = pfWorld;
+    world = pfWorld;
     await add(pfWorld);
     double mazeWidth = pfWorld.cols * pfWorld.tileSize;
     double mazeHeight = pfWorld.rows * pfWorld.tileSize;

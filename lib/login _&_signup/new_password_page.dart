@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_page.dart';
+import 'package:go_router/go_router.dart';
 
 class NewPasswordPage extends StatefulWidget {
   final String email;
@@ -41,11 +42,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
       await Supabase.instance.client.auth.signOut();
 
       if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-              (route) => false,
-        );
+        context.go('/login');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Password updated successfully! Please login.'),
@@ -53,6 +50,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
           ),
         );
       }
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating password: $e')),
