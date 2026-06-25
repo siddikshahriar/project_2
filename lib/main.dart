@@ -20,25 +20,23 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox('game_progress_box');
   await Hive.openBox('games_catalog_box');
-  await Hive.openBox('path_finder_levels_box');   // NEW
-  await Hive.openBox('block_breaker_levels_box'); // NEW
+  await Hive.openBox('path_finder_levels_box');
+  await Hive.openBox('block_breaker_levels_box');
 
-  // await Supabase.initialize(
-  //   url: 'https://uvycbfdnjvzleikvcgzn.supabase.co',
-  //   anonKey: 'sb_publishable_g7zFmsN835t9qAzbdqAhLw_vHT0yeJn',
-  // );
   await Supabase.initialize(
     url: 'https://uvycbfdnjvzleikvcgzn.supabase.co',
     anonKey: 'sb_publishable_g7zFmsN835t9qAzbdqAhLw_vHT0yeJn',
   );
 
-  await LevelSyncService.syncLevels(); // NEW – download levels if online
-  ProgressSyncService.start();         // NEW – start connectivity listener
+  /// download levels if online
+  await LevelSyncService.syncLevels();
+
+  /// start connectivity listener
+  ProgressSyncService.start();
 
   runApp(const MyApp());
 }
 
-// Changed from StatelessWidget → StatefulWidget to detect app quit/pause
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -79,4 +77,3 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     );
   }
 }
-

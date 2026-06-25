@@ -7,11 +7,22 @@ import 'package:project_2/games/block_breaker/world.dart';
 import 'package:project_2/services/local_progress_store.dart';
 
 class BlockBreakerDashboard extends StatelessWidget {
-  final BlockBreakerLevels allLevel = BlockBreakerLevels();
+  final List<Level> allLevel = BlockBreakerLevels.instance.levelList;
+
+  BlockBreakerDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // 1. Load progress ONCE here, instead of inside the loop
+    final progress = LocalProgressStore.loadProgress('block_breaker');
+    final completedLevels = progress != null
+        ? List<int>.from(progress['completed_levels'] ?? [])
+        : <int>[];
+
     return Scaffold(
+      backgroundColor: const Color(
+        0xFF1E222D,
+      ), // Optional: sleek dark background match
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: GridView.builder(
@@ -21,27 +32,26 @@ class BlockBreakerDashboard extends StatelessWidget {
             mainAxisSpacing: 20,
             childAspectRatio: 1,
           ),
-          itemCount: allLevel.levelList.length,
+          itemCount: allLevel.length,
           itemBuilder: (context, index) {
-            return _buildLevelCard(context, index + 1);
+            // 2. Grab the actual target level object
+            final currentLevel = allLevel[index];
+            final isDone = completedLevels.contains(currentLevel.levelId);
+
+            return _buildLevelCard(context, currentLevel.levelId, isDone);
           },
         ),
       ),
     );
   }
 
-  Widget _buildLevelCard(BuildContext context, levelNumber) {
-    final progress  = LocalProgressStore.loadProgress('block_breaker');
-    final completed = progress != null
-        ? List<int>.from(progress['completed_levels'] ?? [])
-        : <int>[];
-    final isDone = completed.contains(levelNumber);
-
+  // 3. Strongly typed parameters and separation of concerns
+  Widget _buildLevelCard(BuildContext context, int levelId, bool isDone) {
     return InkWell(
       onTap: () {
         GoRouter.of(context).pushNamed(
           'block_breaker_gamescreen',
-          pathParameters: {'level': levelNumber.toString()},
+          pathParameters: {'level': levelId.toString()},
         );
       },
       borderRadius: BorderRadius.circular(16),
@@ -68,18 +78,31 @@ class BlockBreakerDashboard extends StatelessWidget {
           children: [
             Stack(
               alignment: Alignment.topRight,
+              clipBehavior: Clip.none, // Prevents checkmark clipping
               children: [
                 const Padding(
                   padding: EdgeInsets.all(4),
-                  child: Icon(Icons.map_rounded, color: Colors.blueAccent, size: 40),
+                  child: Icon(
+                    Icons.map_rounded,
+                    color: Colors.blueAccent,
+                    size: 40,
+                  ),
                 ),
                 if (isDone)
-                  const Icon(Icons.check_circle, color: Colors.greenAccent, size: 18),
+                  const Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Icon(
+                      Icons.check_circle,
+                      color: Colors.greenAccent,
+                      size: 18,
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
-              'Level $levelNumber',
+              'Level $levelId',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,

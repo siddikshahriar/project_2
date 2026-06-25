@@ -1,19 +1,9 @@
-import 'dart:async';
-import 'dart:math';
-import 'package:flame/components.dart';
-import 'package:flame/events.dart';
-import 'package:flame/text.dart';
-import 'package:flutter/material.dart';
-import 'block_breaker.dart';
-import 'components/ball_component.dart';
-import 'components/brick_component.dart';
-import 'components/paddle_component.dart';
-import 'components/star_component.dart';
-import 'restart_overlay.dart';
 import 'dart:convert';
 import 'package:hive/hive.dart';
 
 class BlockBreakerLevels {
+  static final BlockBreakerLevels instance = BlockBreakerLevels();
+
   /// Returns levels from Hive cache (filled by LevelSyncService when online).
   /// Falls back to the bundled list below when offline with no cache yet.
   List<Level> get levelList {
@@ -21,25 +11,31 @@ class BlockBreakerLevels {
       final raw = Hive.box('block_breaker_levels_box').get('levels');
       if (raw != null) {
         final list = jsonDecode(raw as String) as List<dynamic>;
+        //list.sort();
         if (list.isNotEmpty) {
-          return list.map<Level>((item) {
-            final m      = item as Map<String, dynamic>;
+          final parsedLevels = list.map<Level>((item) {
+            final m = item as Map<String, dynamic>;
             final layout = (m['layout'] as List<dynamic>)
-                .map<List<int>>((r) => (r as List<dynamic>)
-                .map((c) => (c as num).toInt())
-                .toList())
+                .map<List<int>>(
+                  (r) => (r as List<dynamic>)
+                      .map((c) => (c as num).toInt())
+                      .toList(),
+                )
                 .toList();
             return Level(
               levelId: (m['level_id'] as num).toInt(),
-              layout:  layout,
+              layout: layout,
             );
           }).toList();
+          parsedLevels.sort((a, b) => a.levelId.compareTo(b.levelId));
+          return parsedLevels;
         }
       }
     } catch (_) {}
     return _bundled;
   }
 
+  /// if the hive has no level yet then this level list will be shown
   static final List<Level> _bundled = [
     Level(
       levelId: 1,
@@ -51,15 +47,6 @@ class BlockBreakerLevels {
         [3, 3, 3, 3, 3, 3, 3, 3],
         [2, 2, 2, 2, 2, 2, 2, 2],
         [1, 1, 1, 1, 1, 1, 1, 1],
-      ],
-    ),
-    Level(
-      levelId: 2,
-      layout: [
-        [0, 1, 1, 1, 0],
-        [1, 0, 1, 0, 1],
-        [1, 1, 0, 1, 1],
-        [1, 0, 0, 0, 1],
       ],
     ),
   ];

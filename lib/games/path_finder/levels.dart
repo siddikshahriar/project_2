@@ -3,14 +3,22 @@ import 'package:hive/hive.dart';
 
 class PathFinderLevels {
   // Maps that keep start/end points in code (as you requested).
-// Add new level IDs here when you add them to Supabase.
+  // Add new level IDs here when you add them to Supabase.
   static final Map<int, Point> _starts = {
-    1: Point(6, 1),  2: Point(1, 1),  3: Point(3, 1),
-    4: Point(7, 7),  5: Point(1, 1),  6: Point(1, 1),
+    1: Point(6, 1),
+    2: Point(1, 1),
+    3: Point(3, 1),
+    4: Point(7, 7),
+    5: Point(1, 1),
+    6: Point(1, 1),
   };
   static final Map<int, Point> _ends = {
-    1: Point(6, 7),  2: Point(39, 15), 3: Point(17, 13),
-    4: Point(1, 18), 5: Point(5, 7),   6: Point(5, 5),
+    1: Point(6, 7),
+    2: Point(39, 15),
+    3: Point(17, 13),
+    4: Point(1, 18),
+    5: Point(5, 7),
+    6: Point(5, 5),
   };
 
   /// Returns levels from Hive cache (filled by LevelSyncService when online).
@@ -21,19 +29,21 @@ class PathFinderLevels {
       if (raw != null) {
         final list = jsonDecode(raw as String) as List<dynamic>;
         if (list.isNotEmpty) {
-          return list.map<PathFinderLevel>((item) {
-            final m   = item as Map<String, dynamic>;
-            final id  = (m['id'] as num).toInt();
+          final parsedLevels = list.map<PathFinderLevel>((item) {
+            final m = item as Map<String, dynamic>;
+            final id = (m['id'] as num).toInt();
             final maze = (m['maze'] as List<dynamic>)
                 .map((e) => e.toString())
                 .toList();
             return PathFinderLevel(
-              id:    id,
-              maze:  maze,
+              id: id,
+              maze: maze,
               start: _starts[id] ?? Point(0, 0),
-              end:   _ends[id]   ?? Point(0, 0),
+              end: _ends[id] ?? Point(0, 0),
             );
           }).toList();
+          parsedLevels.sort((a, b) => a.id.compareTo(b.id));
+          return parsedLevels;
         }
       }
     } catch (_) {}

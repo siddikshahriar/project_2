@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_page.dart';
 import 'package:go_router/go_router.dart';
+import 'package:project_2/router/router_config.dart';
 
 // Defining a StatefulWidget class (Blueprint for a screen with mutable state)
 class EmailVerificationSentPage extends StatefulWidget {
-
   // Instance variable (encapsulation: holds email passed from previous screen)
   final String email;
 
@@ -21,7 +21,6 @@ class EmailVerificationSentPage extends StatefulWidget {
 // State class (handles mutable state and logic of the widget)
 // "_" makes it private to this file (data hiding concept in OOP)
 class _EmailVerificationSentPageState extends State<EmailVerificationSentPage> {
-
   // Creating an object of TextEditingController (object manages OTP input)
   final otpController = TextEditingController();
 
@@ -30,35 +29,43 @@ class _EmailVerificationSentPageState extends State<EmailVerificationSentPage> {
 
   // Asynchronous method (object behavior / class function)
   Future<void> verifyOtp() async {
-
-    // setState updates UI when state variable changes (state management concept)
     setState(() => _loading = true);
 
-    // Calling Supabase authentication method (using singleton instance object)
-    final res = await Supabase.instance.client.auth.verifyOTP(
-      email: widget.email, // Accessing parent widget's property (object communication)
-      token: otpController.text.trim(), // Getting value from controller object
-      type: OtpType.signup, // Enum type (OOP constant grouping concept)
-    );
+    try {
+      final res = await Supabase.instance.client.auth.verifyOTP(
+        email: widget.email,
+        token: otpController.text.trim(),
+        type: OtpType.signup,
+      );
 
-    // Updating state after async operation completes
-    setState(() => _loading = false);
+      setState(() => _loading = false);
 
-    // Checking if session object exists (conditional logic)
-    if (res.session != null) {
+      if (res.session != null) {
+        await Supabase.instance.client.auth.signOut();
 
-      // Signing out user (calling method from auth object)
-      await Supabase.instance.client.auth.signOut();
+        // --- THE FIX: Guard the async gap ---
+        //if (!mounted) return;
 
-      // Navigating to LoginPage via GoRouter (clears the stack safely)
-      context.go('/login');
+        // Now it is safe to use context
+        MyAppRouter.router.goNamed('login');
+      } else {
+        // --- THE FIX: Guard this async gap too ---
+        //if (!mounted) return;
 
-    } else {
-
-      // Showing SnackBar using ScaffoldMessenger object
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Invalid OTP"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Catching network/server errors during verification
+      //if (!mounted) return;
+      setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Invalid OTP"),
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
           backgroundColor: Colors.red,
         ),
       );
@@ -67,7 +74,6 @@ class _EmailVerificationSentPageState extends State<EmailVerificationSentPage> {
 
   // Another asynchronous method (class behavior)
   Future<void> resendOtp() async {
-
     // Calling resend method from Supabase auth object
     await Supabase.instance.client.auth.resend(
       type: OtpType.signup,
@@ -78,7 +84,6 @@ class _EmailVerificationSentPageState extends State<EmailVerificationSentPage> {
   // Overriding build method from State class (polymorphism)
   @override
   Widget build(BuildContext context) {
-
     // Returning Scaffold object (UI structure class)
     return Scaffold(
       backgroundColor: Colors.black,
@@ -89,7 +94,6 @@ class _EmailVerificationSentPageState extends State<EmailVerificationSentPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-
             // Text widget object
             const Text(
               "Enter Email OTP",
@@ -114,7 +118,9 @@ class _EmailVerificationSentPageState extends State<EmailVerificationSentPage> {
 
             // ElevatedButton object
             ElevatedButton(
-              onPressed: _loading ? null : verifyOtp, // Function reference (method binding)
+              onPressed: _loading
+                  ? null
+                  : verifyOtp, // Function reference (method binding)
               child: _loading
                   ? const CircularProgressIndicator() // Object shown during loading
                   : const Text("Verify"),
