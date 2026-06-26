@@ -30,40 +30,55 @@ class _EmailVerificationSentPageState extends State<EmailVerificationSentPage> {
 
   // Asynchronous method (object behavior / class function)
   Future<void> verifyOtp() async {
-
-    // setState updates UI when state variable changes (state management concept)
     setState(() => _loading = true);
 
-    // Calling Supabase authentication method (using singleton instance object)
-    final res = await Supabase.instance.client.auth.verifyOTP(
-      email: widget.email, // Accessing parent widget's property (object communication)
-      token: otpController.text.trim(), // Getting value from controller object
-      type: OtpType.signup, // Enum type (OOP constant grouping concept)
-    );
-
-    // Updating state after async operation completes
-    setState(() => _loading = false);
-
-    // Checking if session object exists (conditional logic)
-    if (res.session != null) {
-
-      // Signing out user (calling method from auth object)
-      await Supabase.instance.client.auth.signOut();
-
-      // Navigating to LoginPage via GoRouter (clears the stack safely)
-      context.go('/login');
-
-    } else {
-
-      // Showing SnackBar using ScaffoldMessenger object
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Invalid OTP"),
-          backgroundColor: Colors.red,
-        ),
+    try {
+      final res = await Supabase.instance.client.auth.verifyOTP(
+        email: widget.email,
+        token: otpController.text.trim(),
+        type: OtpType.signup,
       );
+
+      if (res.session != null) {
+        // Success: Do NOT sign out. Go directly to the main app screen!
+        if (mounted) {
+          context.go('/');
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Invalid OTP"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
+
 
   // Another asynchronous method (class behavior)
   Future<void> resendOtp() async {

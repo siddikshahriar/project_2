@@ -2,6 +2,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'settings_page.dart';
+
+class GameProgress {
+  final String gameName;
+  final int passedLevels;
+  final int xp;
+
+  GameProgress({
+    required this.gameName,
+    required this.passedLevels,
+    required this.xp,
+  });
+}
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -14,13 +27,32 @@ class _ProfilePageState extends State<ProfilePage> {
   final supabase = Supabase.instance.client;
 
   final nameController = TextEditingController();
-  final locationController = TextEditingController();
-  final bioController = TextEditingController();
-  final oldPasswordController = TextEditingController();
-  final newPasswordController = TextEditingController();
 
   String? avatarUrl;
+
   bool loading = true;
+  bool uploadingAvatar = false;
+
+  final List<GameProgress> gameStats = [
+    GameProgress(
+      gameName: "Ball Breaker",
+      passedLevels: 2,
+      xp: 69,
+    ),
+    GameProgress(
+      gameName: "Path Finder",
+      passedLevels: 1,
+      xp: 101,
+    ),
+    GameProgress(
+      gameName: "Number Matching",
+      passedLevels: 0,
+      xp: 0,
+    ),
+  ];
+
+  int get totalXP =>
+      gameStats.fold(0, (sum, item) => sum + item.xp);
 
   @override
   void initState() {
@@ -31,27 +63,21 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void dispose() {
     nameController.dispose();
-    locationController.dispose();
-    bioController.dispose();
-    oldPasswordController.dispose();
-    newPasswordController.dispose();
     super.dispose();
   }
 
-  // Load profile (show dummy data if not logged in)
   Future<void> _loadProfile() async {
     final user = supabase.auth.currentUser;
 
     if (user == null) {
       nameController.text = "Guest User";
-      locationController.text = "Dhaka, Bangladesh";
-      bioController.text = "Welcome to NeuroGym! Edit this profile.";
       setState(() => loading = false);
       return;
     }
 
     final first = user.userMetadata?['first_name'] ?? '';
     final last = user.userMetadata?['last_name'] ?? '';
+
     nameController.text = "$first $last".trim();
 
     try {
@@ -62,127 +88,118 @@ class _ProfilePageState extends State<ProfilePage> {
           .maybeSingle();
 
       if (data != null) {
-        locationController.text = data['location'] ?? '';
-        bioController.text = data['bio'] ?? '';
         avatarUrl = data['avatar_url'];
-      } else {
-        await supabase.from('profiles').insert({
-          'id': user.id,
-          'email': user.email,
-        });
       }
-    } catch (e) {
-      print("Profile load error: $e");
-      locationController.text = "Error loading location";
-      bioController.text = "Error loading bio";
-    } finally {
-      setState(() => loading = false);
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        loading = false;
+      });
     }
   }
 
-  // Pick image from gallery
   Future<void> _pickImage() async {
+    if (uploadingAvatar) return;
+
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
+
+    final file = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
+
     if (file == null) return;
 
     final user = supabase.auth.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please login to change avatar")),
-      );
-      return;
-    }
 
-    final fileName = '${user.id}.png';
+    if (user == null) return;
+
+    setState(() {
+      uploadingAvatar = true;
+    });
 
     try {
-      await supabase.storage.from('profile_pictures').upload(
-            fileName,
-            File(file.path),
-            fileOptions: const FileOptions(upsert: true),
-          );
+      final fileName = '${user.id}.png';
 
-      final url = supabase.storage.from('profile_pictures').getPublicUrl(fileName);
+      await supabase.storage
+          .from('profile_pictures')
+          .upload(
+        fileName,
+        File(file.path),
+        fileOptions: const FileOptions(
+          upsert: true,
+        ),
+      );
+
+      final url = supabase.storage
+          .from('profile_pictures')
+          .getPublicUrl(fileName);
 
       await supabase
           .from('profiles')
-          .update({'avatar_url': url})
+          .update({
+        'avatar_url': url,
+      })
           .eq('id', user.id);
 
-      setState(() => avatarUrl = url);
-    } catch (e) {
-      print("Upload failed: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Image upload failed: $e")),
-      );
+      if (mounted) {
+        setState(() {
+          avatarUrl = url;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          uploadingAvatar = false;
+        });
+      }
     }
   }
 
-  // Save profile and password changes
-  Future<void> _saveProfile() async {
-    final user = supabase.auth.currentUser;
-
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please login to save profile")),
-      );
-      return;
-    }
-
-    final email = user.email!;
-
-    try {
-      // Update profile table
-      await supabase.from('profiles').update({
-        'full_name': nameController.text.trim(),
-        'location': locationController.text.trim(),
-        'bio': bioController.text.trim(),
-      }).eq('id', user.id);
-
-      // Update auth metadata
-      final names = nameController.text.trim().split(" ");
-      await supabase.auth.updateUser(
-        UserAttributes(data: {
-          'first_name': names.first,
-          'last_name': names.length > 1 ? names.sublist(1).join(" ") : '',
-        }),
-      );
-
-      // Handle password change
-      if (oldPasswordController.text.isNotEmpty &&
-          newPasswordController.text.isNotEmpty) {
-        try {
-          await supabase.auth.signInWithPassword(
-            email: email,
-            password: oldPasswordController.text.trim(),
-          );
-
-          await supabase.auth.updateUser(
-            UserAttributes(password: newPasswordController.text.trim()),
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Password updated successfully")),
-          );
-          oldPasswordController.clear();
-          newPasswordController.clear();
-        } catch (_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Old password is incorrect")),
-          );
-          return;
-        }
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Profile updated successfully")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving: $e")),
-      );
-    }
+  Widget _gameCard(GameProgress game) {
+    return Card(
+      color: Colors.grey.shade900,
+      child: ListTile(
+        leading: const CircleAvatar(
+          backgroundColor: Colors.cyan,
+          child: Icon(
+            Icons.sports_esports,
+            color: Colors.black,
+          ),
+        ),
+        title: Text(
+          game.gameName,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(
+          "Passed ${game.passedLevels} Levels",
+          style: const TextStyle(
+            color: Colors.white70,
+          ),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              "XP",
+              style: TextStyle(
+                color: Colors.cyan,
+              ),
+            ),
+            Text(
+              "${game.xp}",
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -190,9 +207,15 @@ class _ProfilePageState extends State<ProfilePage> {
     if (loading) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
       );
     }
+
+    final email =
+        supabase.auth.currentUser?.email ??
+            "guest@example.com";
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -201,129 +224,145 @@ class _ProfilePageState extends State<ProfilePage> {
         title: const Text("Profile"),
         actions: [
           IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveProfile,
-            tooltip: 'Save',
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                  const SettingsPage(),
+                ),
+              );
+            },
           ),
         ],
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(20),
-        child: ListView(
-          children: [
-            // Profile image and edit button
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundImage:
-                        avatarUrl != null ? NetworkImage(avatarUrl!) : null,
-                    backgroundColor: Colors.grey,
-                    child: avatarUrl == null
-                        ? const Icon(Icons.person, size: 60, color: Colors.white)
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: GestureDetector(
-                      onTap: _pickImage,
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.cyan,
-                        child: const Icon(Icons.edit, size: 18, color: Colors.black),
+        children: [
+          Center(
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Colors.grey,
+                  backgroundImage:
+                  avatarUrl != null
+                      ? NetworkImage(
+                    avatarUrl!,
+                  )
+                      : null,
+                  child: avatarUrl == null
+                      ? const Icon(
+                    Icons.person,
+                    size: 60,
+                    color: Colors.white,
+                  )
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor:
+                      Colors.cyan,
+                      child: uploadingAvatar
+                          ? const SizedBox(
+                        height: 15,
+                        width: 15,
+                        child:
+                        CircularProgressIndicator(
+                          strokeWidth:
+                          2,
+                        ),
+                      )
+                          : const Icon(
+                        Icons.edit,
+                        color:
+                        Colors.black,
                       ),
                     ),
-                  )
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          Center(
+            child: Text(
+              nameController.text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight:
+                FontWeight.bold,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          Center(
+            child: Text(
+              email,
+              style: const TextStyle(
+                color: Colors.white70,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 25),
+
+          Card(
+            color: Colors.cyan,
+            child: Padding(
+              padding:
+              const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  const Text(
+                    "TOTAL XP",
+                    style: TextStyle(
+                      fontSize: 18,
+                    ),
+                  ),
+                  Text(
+                    "$totalXP",
+                    style:
+                    const TextStyle(
+                      fontSize: 36,
+                      fontWeight:
+                      FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            Center(
-              child: Text(
-                bioController.text,
-                style: const TextStyle(color: Colors.white70),
-                textAlign: TextAlign.center,
-              ),
+          ),
+
+          const SizedBox(height: 20),
+
+          const Text(
+            "Game Progress",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight:
+              FontWeight.bold,
             ),
-            const SizedBox(height: 20),
-            _label("Full Name"),
-            _field(nameController),
-            _label("Email"),
-            _readonlyField(supabase.auth.currentUser?.email ?? "guest@example.com"),
-            _label("Old Password"),
-            _field(oldPasswordController, hide: true),
-            _label("New Password"),
-            _field(newPasswordController, hide: true),
-            _label("Location"),
-            _field(locationController),
-            _label("Bio (max 60 chars)"),
-            _bioField(),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan),
-              onPressed: _saveProfile,
-              child: const Text("Save Changes"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+          ),
 
-  // Helper widgets
-  Widget _label(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.white54, fontSize: 12),
-      ),
-    );
-  }
+          const SizedBox(height: 10),
 
-  Widget _field(TextEditingController c, {bool hide = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: c,
-        obscureText: hide,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.grey[900],
-        ),
-      ),
-    );
-  }
-
-  Widget _readonlyField(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        enabled: false,
-        controller: TextEditingController(text: text),
-        style: const TextStyle(color: Colors.white54),
-        decoration: const InputDecoration(
-          filled: true,
-          fillColor: Colors.grey,
-        ),
-      ),
-    );
-  }
-
-  Widget _bioField() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: bioController,
-        maxLength: 60,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.grey[900],
-        ),
+          ...gameStats.map(
+                (e) => _gameCard(e),
+          ),
+        ],
       ),
     );
   }

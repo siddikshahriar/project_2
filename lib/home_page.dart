@@ -10,90 +10,240 @@ import 'package:go_router/go_router.dart';
 
 enum GameType { blockBreaker, numberMatching, pathFinder }
 
-/// homepage is where all the available games are listed
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String userName = "Player";
+  int totalXP = 170; // Template XP based on your Profile Page stats
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final firstName = user.userMetadata?['first_name'] ?? 'Player';
+      if (mounted) {
+        setState(() {
+          userName = firstName;
+          isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    //print("HomePage build called");
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text(
-          "NeuroGym Games",
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const CircleAvatar(
-            backgroundColor: Colors.grey,
-            child: Icon(Icons.person, color: Colors.white),
+      body: Container(
+        ///dark gaming background with radial gradient
+
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0D0D0D), // deep black
+              Color(0xFF1A2A40), // bluish navy
+              Color(0xFF00FFFF), // neon cyan
+            ],
           ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfilePage()),
-            );
-          },
         ),
-        actions: [
-          /// the signout button
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () async {
-              await Supabase.instance.client.auth.signOut();
-              if (context.mounted) {
-                GoRouter.of(context).goNamed('login');
-              }
-            },
+
+          // decoration: const BoxDecoration(
+          //   gradient: RadialGradient(
+          //     center: Alignment.topLeft,
+          //     radius: 1.5,
+          //     colors: [
+          //       Color(0xFF1A1A2E),
+          //       Color(0xFF0F0F1A),
+          //       Colors.black,
+          //     ],
+          //   ),
+          // ),
+
+
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCustomHeader(context),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                child: Text(
+                  "Select a Mission",
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 16,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: isLoading
+                    ? const Center(
+                  child: CircularProgressIndicator(color: Colors.cyan),
+                )
+                    : GridView.count(
+                  crossAxisCount: 2,
+                  padding: const EdgeInsets.all(20),
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 20,
+                  children: [
+                    _gameCard(
+                        "Block Breaker", "assets/icons/block_breaker.png",
+                            () {
+                          _navigateToGame(
+                            context,
+                            BlockBreakerDashboard(),
+                          );
+                        }),
+                    _gameCard("Number Matching",
+                        "assets/icons/number_matching.png", () {
+                          _navigateToGame(
+                            context,
+                            GameWidget<NeuroGym>(
+                              game:
+                              NeuroGym(gameType: GameType.numberMatching),
+                              overlayBuilderMap: {
+                                'NumberMatchingDashboard': (context, game) =>
+                                    NumberMatchingDashboard(game: game),
+                              },
+                            ),
+                          );
+                        }),
+                    _gameCard(
+                        "Path Finder", "assets/icons/path_finder.png",
+                            () {
+                          _navigateToGame(
+                            context,
+                            GameWidget<NeuroGym>(
+                              game: NeuroGym(gameType: GameType.pathFinder),
+                              overlayBuilderMap: {
+                                'PathFinderDashboard': (context, game) =>
+                                    PathFinderDashboard(game: game),
+                              },
+                            ),
+                          );
+                        }),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
+    );
+  }
 
-      /// all the games are listed in a grid view containing 2 columns for each row
-      body: GridView.count(
-        crossAxisCount: 2,
-        padding: const EdgeInsets.all(16),
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+  Widget _buildCustomHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _gameCard("Block Breaker", "assets/icons/block_breaker.png", () {
-            _navigateToGame(
-              context,
-              BlockBreakerDashboard(),
-              //GameWidget(game: NeuroGym(gameType: GameType.blockBreaker)),
-            );
-          }),
-
-          _gameCard("Number Matching", "assets/icons/number_matching.png", () {
-            _navigateToGame(
-              context,
-              GameWidget<NeuroGym>(
-                /// creates a game instance of type numbermatching which extends FlameGame
-                game: NeuroGym(gameType: GameType.numberMatching),
-
-                /// overlay for dashboard and additonal buttons to show over game world
-                overlayBuilderMap: {
-                  'NumberMatchingDashboard': (context, game) =>
-                      NumberMatchingDashboard(game: game),
+          // Left Side: App Title + User Info
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "NeuroGym",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      color: Colors.cyanAccent,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.cyan.withOpacity(0.2),
+                      border: Border.all(color: Colors.cyan, width: 1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.flash_on,
+                            color: Colors.cyanAccent, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          "$totalXP XP",
+                          style: const TextStyle(
+                            color: Colors.cyanAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Right Side: Profile & Logout
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfilePage()),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.cyan, width: 2),
+                  ),
+                  child: const CircleAvatar(
+                    backgroundColor: Colors.black45,
+                    child: Icon(Icons.person, color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white70),
+                onPressed: () async {
+                  await Supabase.instance.client.auth.signOut();
+                  if (context.mounted) {
+                    GoRouter.of(context).goNamed('login');
+                  }
                 },
               ),
-            );
-          }),
-
-          _gameCard("Path Finder", "assets/icons/path_finder.png", () {
-            _navigateToGame(
-              context,
-              GameWidget<NeuroGym>(
-                game: NeuroGym(gameType: GameType.pathFinder),
-                overlayBuilderMap: {
-                  'PathFinderDashboard': (context, game) =>
-                      PathFinderDashboard(game: game),
-                },
-              ),
-            );
-          }),
+            ],
+          ),
         ],
       ),
     );
@@ -106,12 +256,11 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  /// and additional game screen where each game will show up
   Widget _centeredGameScreen(Widget gameWidget) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1117), // Deeper dark theme
+      backgroundColor: const Color(0xFF0D1117),
       appBar: AppBar(
-        title: Text('Dashboard'),
+        title: const Text('Dashboard'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: const BackButton(color: Colors.white),
@@ -142,30 +291,47 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  /// makes a rectangular card for each game
   Widget _gameCard(String title, String image, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Card(
-        elevation: 4,
-        color: Colors.grey[900],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.grey.shade900,
+              Colors.black,
+            ],
+          ),
+          border: Border.all(color: Colors.cyan.withOpacity(0.3), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.cyan.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
               image,
-              height: 100,
+              height: 75, // Scaled slightly to maintain aesthetic inside new border
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.gamepad, size: 80, color: Colors.white24),
+              const Icon(Icons.sports_esports, size: 75, color: Colors.white24),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 15),
             Text(
               title,
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: 15,
+                letterSpacing: 0.5,
               ),
             ),
           ],
