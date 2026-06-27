@@ -25,6 +25,7 @@ class BlockBreakerLevels {
             return Level(
               levelId: (m['level_id'] as num).toInt(),
               layout: layout,
+              levelXP: (m['levelXP'] as num).toInt(),
             );
           }).toList();
           parsedLevels.sort((a, b) => a.levelId.compareTo(b.levelId));
@@ -48,6 +49,7 @@ class BlockBreakerLevels {
         [2, 2, 2, 2, 2, 2, 2, 2],
         [1, 1, 1, 1, 1, 1, 1, 1],
       ],
+      levelXP: 10,
     ),
   ];
 }
@@ -55,6 +57,7 @@ class BlockBreakerLevels {
 class Level {
   final int levelId;
   final List<List<int>> layout;
+  final int levelXP;
 
-  Level({required this.levelId, required this.layout});
+  Level({required this.levelId, required this.layout, required this.levelXP});
 }

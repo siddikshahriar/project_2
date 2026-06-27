@@ -37,8 +37,14 @@ class BlockBreakerDashboard extends StatelessWidget {
             // 2. Grab the actual target level object
             final currentLevel = allLevel[index];
             final isDone = completedLevels.contains(currentLevel.levelId);
+            final levelXP = currentLevel.levelXP;
 
-            return _buildLevelCard(context, currentLevel.levelId, isDone);
+            return _buildLevelCard(
+              context,
+              currentLevel.levelId,
+              levelXP,
+              isDone,
+            );
           },
         ),
       ),
@@ -46,18 +52,24 @@ class BlockBreakerDashboard extends StatelessWidget {
   }
 
   // 3. Strongly typed parameters and separation of concerns
-  Widget _buildLevelCard(BuildContext context, int levelId, bool isDone) {
+  Widget _buildLevelCard(
+    BuildContext context,
+    int levelId,
+    int levelXP,
+    bool isDone,
+  ) {
     return InkWell(
       onTap: () {
         GoRouter.of(context).pushNamed(
           'block_breaker_gamescreen',
           pathParameters: {'level': levelId.toString()},
+          extra: isDone ? 0 : levelXP,
         );
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF2D323E),
+          color: const Color.fromARGB(255, 8, 13, 23),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDone
@@ -100,7 +112,13 @@ class BlockBreakerDashboard extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            Text(
+              'XP: $levelXP',
+              style: const TextStyle(
+                color: Color(0xFFFFDF00),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             Text(
               'Level $levelId',
               style: const TextStyle(

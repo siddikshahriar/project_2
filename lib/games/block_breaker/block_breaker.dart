@@ -9,7 +9,8 @@ import 'world.dart';
 
 class GameScreen extends StatelessWidget {
   final int level;
-  const GameScreen({super.key, required this.level});
+  final int levelXP;
+  const GameScreen({super.key, required this.level, required this.levelXP});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +22,7 @@ class GameScreen extends StatelessWidget {
       ),
       body: GameWidget(
         // Pass the level dynamically to your Flame Game instance
-        game: BlockBreaker(level: level),
+        game: BlockBreaker(level: level, levelXP: levelXP),
       ),
     );
   }
@@ -29,7 +30,8 @@ class GameScreen extends StatelessWidget {
 
 class BlockBreaker extends FlameGame {
   int level;
-  BlockBreaker({required this.level});
+  int levelXP;
+  BlockBreaker({required this.level, required this.levelXP});
 
   @override
   Future<void> onLoad() async {
@@ -40,7 +42,7 @@ class BlockBreaker extends FlameGame {
 
   Future<void> loadLevel(int level) async {
     /// new world
-    final newWorld = BlockBreakerWorld(level: level);
+    final newWorld = BlockBreakerWorld(level: level, levelXP: levelXP);
 
     /// assigning new world to the in built world
     world = newWorld;

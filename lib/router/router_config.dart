@@ -78,7 +78,10 @@ class MyAppRouter {
           // Extract the level string from path parameters and parse to integer
           final levelString = state.pathParameters['level'] ?? '1';
           final level = int.parse(levelString);
-          return MaterialPage(child: GameScreen(level: level));
+          final levelXP = (state.extra as int) ?? 0;
+          return MaterialPage(
+            child: GameScreen(level: level, levelXP: levelXP),
+          );
         },
       ),
     ],

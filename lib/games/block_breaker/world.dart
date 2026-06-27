@@ -18,8 +18,9 @@ import 'package:project_2/services/progress_sync_service.dart';
 
 class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
   int level;
+  int levelXP;
 
-  BlockBreakerWorld({required this.level});
+  BlockBreakerWorld({required this.level, required this.levelXP});
 
   // Game Arena Dimensions matching the viewport
   final double arenaWidth = 600;
@@ -482,16 +483,18 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
   /// to Supabase if online. Mirrors the same pattern used in
   /// PathFinderWorld and NumberMatchingWorld.
   Future<void> _saveProgress() async {
-    final existing  = LocalProgressStore.loadProgress('block_breaker');
+    final existing = LocalProgressStore.loadProgress('block_breaker');
     final completed = existing != null
         ? List<int>.from(existing['completed_levels'] ?? [])
         : <int>[];
     if (!completed.contains(level)) completed.add(level);
+    int currentXP = (existing != null) ? existing['xp'].toInt() : 0;
 
     await LocalProgressStore.saveProgress('block_breaker', {
       'completed_levels': completed,
-      'last_level':       level,
-      'last_score':       score,
+      'last_level': level,
+      'last_score': score,
+      'xp': currentXP + levelXP,
     });
     ProgressSyncService.syncNow();
   }
