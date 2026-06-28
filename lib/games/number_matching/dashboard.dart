@@ -29,17 +29,22 @@ class NumberMatchingDashboard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            _difficultyButton(context, "Easy (2x2)", 2),
-            _difficultyButton(context, "Medium (3x3)", 3),
-            _difficultyButton(context, "Hard (4x4)", 4),
-            _difficultyButton(context, "Super Hard(5x5)", 5),
+            _difficultyButton(context, "Easy (2x2)", 2, 2),
+            _difficultyButton(context, "Medium (3x3)", 3, 10),
+            _difficultyButton(context, "Hard (4x4)", 4, 50),
+            _difficultyButton(context, "Super Hard(5x5)", 5, 200),
           ],
         ),
       ),
     );
   }
 
-  Widget _difficultyButton(BuildContext context, String label, int size) {
+  Widget _difficultyButton(
+    BuildContext context,
+    String label,
+    int size,
+    int levelXP,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: ElevatedButton(
@@ -48,8 +53,22 @@ class NumberMatchingDashboard extends StatelessWidget {
           foregroundColor: Colors.black,
           minimumSize: const Size(double.infinity, 50),
         ),
-        onPressed: () => game.startNumberMatchingGame(size),
-        child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        onPressed: () => game.startNumberMatchingGame(size, levelXP),
+        child: Row(
+          children: [
+            SizedBox(width: 30),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Spacer(),
+            Text(
+              '$levelXP XP',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

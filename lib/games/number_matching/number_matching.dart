@@ -14,14 +14,14 @@ class NumberMatching extends Component with HasGameReference<FlameGame> {
   }
 
   /// n is the difficulty of the level
-  Future<void> startLevel(int n) async {
+  Future<void> startLevel(int n, int levelXP) async {
     /// remove the overlay before creating the game world
     game.overlays.remove('NumberMatchingDashboard');
 
     if (world != null) world!.removeFromParent();
     if (camera != null) camera!.removeFromParent();
 
-    world = NumberMatchingWorld(n: n);
+    world = NumberMatchingWorld(n: n, levelXP: levelXP);
     camera = CameraComponent.withFixedResolution(
       world: world!,
       width: n * 100,

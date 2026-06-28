@@ -14,6 +14,8 @@ import 'package:project_2/services/progress_sync_service.dart';
 class PathFinderWorld extends World
     with HasGameReference<FlameGame>, TapCallbacks {
   late final PathFinderLevel level;
+  int levelID;
+  int levelXP;
   final double tileSize = 50;
   late List<List<String>> grid;
   late Point player;
@@ -32,7 +34,7 @@ class PathFinderWorld extends World
   late int rows;
   late int cols;
 
-  PathFinderWorld(this.level);
+  PathFinderWorld(this.level, this.levelID, this.levelXP);
 
   @override
   Future<void> onLoad() async {
@@ -265,15 +267,15 @@ class PathFinderWorld extends World
   /// remembers that this level was completed, on this device
   Future<void> _saveProgress() async {
     final existing = LocalProgressStore.loadProgress('path_finder');
-    final completed = existing != null
-        ? List<int>.from(existing['completed_levels'] ?? [])
-        : <int>[];
-    if (!completed.contains(level.id)) completed.add(level.id);
+    final lastLevel = existing?['lastLevel'] as int? ?? 0;
+    final gameXP = existing?['gameXP'] as int? ?? 0;
+
+    /// already completed level
+    if (levelID <= lastLevel) return;
 
     await LocalProgressStore.saveProgress('path_finder', {
-      'completed_levels': completed,
-      'last_level_id': level.id,
-      'last_moves': moveCount,
+      'lastLevel': levelID,
+      'gameXP': gameXP + levelXP,
     });
     ProgressSyncService.syncNow(); // pushes now if online; quietly skipped if not
   }

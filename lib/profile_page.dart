@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'settings_page.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:project_2/services/local_progress_store.dart';
 
 class GameProgress {
   final String gameName;
@@ -25,7 +27,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final supabase = Supabase.instance.client;
-
   final nameController = TextEditingController();
 
   String? avatarUrl;
@@ -33,26 +34,10 @@ class _ProfilePageState extends State<ProfilePage> {
   bool loading = true;
   bool uploadingAvatar = false;
 
-  final List<GameProgress> gameStats = [
-    GameProgress(
-      gameName: "Ball Breaker",
-      passedLevels: 2,
-      xp: 69,
-    ),
-    GameProgress(
-      gameName: "Path Finder",
-      passedLevels: 1,
-      xp: 101,
-    ),
-    GameProgress(
-      gameName: "Number Matching",
-      passedLevels: 0,
-      xp: 0,
-    ),
-  ];
+  // 1. Changed from final/hardcoded to a mutable empty list
+  List<GameProgress> gameStats = [];
 
-  int get totalXP =>
-      gameStats.fold(0, (sum, item) => sum + item.xp);
+  int get totalXP => gameStats.fold(0, (sum, item) => sum + item.xp);
 
   @override
   void initState() {
@@ -75,22 +60,43 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
+    // Set initial fallback name from metadata
     final first = user.userMetadata?['first_name'] ?? '';
     final last = user.userMetadata?['last_name'] ?? '';
-
     nameController.text = "$first $last".trim();
 
     try {
-      final data = await supabase
+      // 2. Fetch avatar and profile details
+      final profileData = await supabase
           .from('profiles')
           .select()
           .eq('id', user.id)
           .maybeSingle();
 
-      if (data != null) {
-        avatarUrl = data['avatar_url'];
+      if (profileData != null) {
+        avatarUrl = profileData['avatar_url'];
       }
-    } catch (_) {}
+
+      final box = Hive.box('game_progress_box');
+
+      gameStats = [];
+
+      for (final key in box.keys) {
+        final data = box.get(key);
+
+        if (data is Map) {
+          gameStats.add(
+            GameProgress(
+              gameName: key.toString(),
+              passedLevels: (data['lastLevel'] ?? 0) as int,
+              xp: (data['gameXP'] ?? 0) as int,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print("Error loading profile or game data: $e");
+    }
 
     if (mounted) {
       setState(() {
@@ -103,15 +109,10 @@ class _ProfilePageState extends State<ProfilePage> {
     if (uploadingAvatar) return;
 
     final picker = ImagePicker();
-
-    final file = await picker.pickImage(
-      source: ImageSource.gallery,
-    );
+    final file = await picker.pickImage(source: ImageSource.gallery);
 
     if (file == null) return;
-
     final user = supabase.auth.currentUser;
-
     if (user == null) return;
 
     setState(() {
@@ -124,12 +125,10 @@ class _ProfilePageState extends State<ProfilePage> {
       await supabase.storage
           .from('profile_pictures')
           .upload(
-        fileName,
-        File(file.path),
-        fileOptions: const FileOptions(
-          upsert: true,
-        ),
-      );
+            fileName,
+            File(file.path),
+            fileOptions: const FileOptions(upsert: true),
+          );
 
       final url = supabase.storage
           .from('profile_pictures')
@@ -137,9 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       await supabase
           .from('profiles')
-          .update({
-        'avatar_url': url,
-      })
+          .update({'avatar_url': url})
           .eq('id', user.id);
 
       if (mounted) {
@@ -162,10 +159,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: ListTile(
         leading: const CircleAvatar(
           backgroundColor: Colors.cyan,
-          child: Icon(
-            Icons.sports_esports,
-            color: Colors.black,
-          ),
+          child: Icon(Icons.sports_esports, color: Colors.black),
         ),
         title: Text(
           game.gameName,
@@ -176,19 +170,12 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         subtitle: Text(
           "Passed ${game.passedLevels} Levels",
-          style: const TextStyle(
-            color: Colors.white70,
-          ),
+          style: const TextStyle(color: Colors.white70),
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              "XP",
-              style: TextStyle(
-                color: Colors.cyan,
-              ),
-            ),
+            const Text("XP", style: TextStyle(color: Colors.cyan)),
             Text(
               "${game.xp}",
               style: const TextStyle(
@@ -207,15 +194,11 @@ class _ProfilePageState extends State<ProfilePage> {
     if (loading) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    final email =
-        supabase.auth.currentUser?.email ??
-            "guest@example.com";
+    final email = supabase.auth.currentUser?.email ?? "guest@example.com";
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -228,10 +211,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                  const SettingsPage(),
-                ),
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
               );
             },
           ),
@@ -246,18 +226,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey,
-                  backgroundImage:
-                  avatarUrl != null
-                      ? NetworkImage(
-                    avatarUrl!,
-                  )
+                  backgroundImage: avatarUrl != null
+                      ? NetworkImage(avatarUrl!)
                       : null,
                   child: avatarUrl == null
-                      ? const Icon(
-                    Icons.person,
-                    size: 60,
-                    color: Colors.white,
-                  )
+                      ? const Icon(Icons.person, size: 60, color: Colors.white)
                       : null,
                 ),
                 Positioned(
@@ -267,101 +240,77 @@ class _ProfilePageState extends State<ProfilePage> {
                     onTap: _pickImage,
                     child: CircleAvatar(
                       radius: 18,
-                      backgroundColor:
-                      Colors.cyan,
+                      backgroundColor: Colors.cyan,
                       child: uploadingAvatar
                           ? const SizedBox(
-                        height: 15,
-                        width: 15,
-                        child:
-                        CircularProgressIndicator(
-                          strokeWidth:
-                          2,
-                        ),
-                      )
-                          : const Icon(
-                        Icons.edit,
-                        color:
-                        Colors.black,
-                      ),
+                              height: 15,
+                              width: 15,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.edit, color: Colors.black),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 15),
-
           Center(
             child: Text(
               nameController.text,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 22,
-                fontWeight:
-                FontWeight.bold,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-
           const SizedBox(height: 5),
-
           Center(
-            child: Text(
-              email,
-              style: const TextStyle(
-                color: Colors.white70,
-              ),
-            ),
+            child: Text(email, style: const TextStyle(color: Colors.white70)),
           ),
-
           const SizedBox(height: 25),
-
           Card(
             color: Colors.cyan,
             child: Padding(
-              padding:
-              const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  const Text(
-                    "TOTAL XP",
-                    style: TextStyle(
-                      fontSize: 18,
-                    ),
-                  ),
+                  const Text("TOTAL XP", style: TextStyle(fontSize: 18)),
                   Text(
                     "$totalXP",
-                    style:
-                    const TextStyle(
+                    style: const TextStyle(
                       fontSize: 36,
-                      fontWeight:
-                      FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-
           const SizedBox(height: 20),
-
           const Text(
             "Game Progress",
             style: TextStyle(
               color: Colors.white,
               fontSize: 20,
-              fontWeight:
-              FontWeight.bold,
+              fontWeight: FontWeight.bold,
             ),
           ),
-
           const SizedBox(height: 10),
 
-          ...gameStats.map(
-                (e) => _gameCard(e),
-          ),
+          // 5. Shows a placeholder message if the user has no game records yet
+          gameStats.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Text(
+                      "No game data available.",
+                      style: TextStyle(color: Colors.white60),
+                    ),
+                  ),
+                )
+              : Column(children: gameStats.map((e) => _gameCard(e)).toList()),
         ],
       ),
     );

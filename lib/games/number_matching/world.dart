@@ -9,6 +9,7 @@ import 'package:project_2/services/progress_sync_service.dart';
 
 class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
   final int n;
+  final int levelXP;
   late TextComponent countText;
   TextComponent? finalText;
   late CameraComponent attachedCamera;
@@ -16,7 +17,7 @@ class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
   bool gameOver = false;
   late List<List<int?>> grid;
 
-  NumberMatchingWorld({required this.n});
+  NumberMatchingWorld({required this.n, required this.levelXP});
 
   @override
   Future<void> onLoad() async {
@@ -173,15 +174,10 @@ class NumberMatchingWorld extends World with HasGameReference<FlameGame> {
   /// remembers that this difficulty was completed, on this device
   Future<void> _saveProgress() async {
     final existing = LocalProgressStore.loadProgress('number_matching');
-    final completed = existing != null
-        ? List<int>.from(existing['completed_difficulties'] ?? [])
-        : <int>[];
-    if (!completed.contains(n)) completed.add(n);
+    int gameXP = (existing != null) ? existing['gameXP'] : 0;
 
     await LocalProgressStore.saveProgress('number_matching', {
-      'completed_difficulties': completed,
-      'last_difficulty': n,
-      'last_moves': moves,
+      'gameXP': gameXP + levelXP,
     });
     ProgressSyncService.syncNow(); // pushes now if online; quietly skipped if not
   }

@@ -15,15 +15,6 @@ class _PathFinderDashboardState extends State<PathFinderDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1D23),
-      appBar: AppBar(
-        title: const Text(
-          'Pathfinder Dashboard',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF23272F),
-        elevation: 0,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: GridView.builder(
@@ -35,24 +26,35 @@ class _PathFinderDashboardState extends State<PathFinderDashboard> {
           ),
           itemCount: PathFinderLevels.levels.length,
           itemBuilder: (context, index) {
-            final level = PathFinderLevels.levels[index];
-            return _buildLevelCard(index + 1, level);
+            final levelData = PathFinderLevels.levels[index];
+            final levelXP = levelData.levelXP;
+            final levelID = levelData.id;
+            return _buildLevelCard(levelID, levelXP, levelData);
           },
         ),
       ),
     );
   }
 
-  Widget _buildLevelCard(int levelNumber, dynamic levelData) {
+  Widget _buildLevelCard(int levelID, int levelXP, dynamic levelData) {
     // Read completed levels from local Hive storage
-    final progress  = LocalProgressStore.loadProgress('path_finder');
-    final completed = progress != null
-        ? List<int>.from(progress['completed_levels'] ?? [])
-        : <int>[];
-    final isDone = completed.contains(levelData.id);
+    final progress = LocalProgressStore.loadProgress('path_finder');
+    int lastLevel = progress?['lastLevel'] as int? ?? 0;
+    int gameXP = progress?['gameXP'] as int? ?? 0;
+    bool isDone = levelID <= lastLevel;
 
     return InkWell(
-      onTap: () => widget.game.startPathFinder(levelData),
+      onTap: () => levelID > lastLevel + 1
+          ? ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '!complete previous levels!',
+                  style: TextStyle(color: Colors.red, fontSize: 14),
+                ),
+              ),
+            )
+          : widget.game.startPathFinder(levelData, levelID, levelXP),
+
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
@@ -77,18 +79,35 @@ class _PathFinderDashboardState extends State<PathFinderDashboard> {
           children: [
             Stack(
               alignment: Alignment.topRight,
+              clipBehavior: Clip.none, // Prevents checkmark clipping
               children: [
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(4),
-                  child: Icon(Icons.map_rounded, color: Colors.blueAccent, size: 40),
+                  child: Icon(
+                    isDone
+                        ? Icons.check_circle
+                        : levelID == lastLevel + 1
+                        ? Icons.lock_open
+                        : Icons.lock,
+                    color: isDone
+                        ? Colors.blueAccent
+                        : levelID == lastLevel + 1
+                        ? Colors.green
+                        : Colors.red,
+                    size: 40,
+                  ),
                 ),
-                if (isDone)
-                  const Icon(Icons.check_circle, color: Colors.greenAccent, size: 18),
               ],
             ),
-            const SizedBox(height: 12),
             Text(
-              'Level $levelNumber',
+              '$levelXP XP',
+              style: const TextStyle(
+                color: Color(0xFFFFDF00),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              'Level $levelID',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,

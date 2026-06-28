@@ -19,7 +19,6 @@ import 'package:project_2/services/progress_sync_service.dart';
 class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
   int level;
   int levelXP;
-
   BlockBreakerWorld({required this.level, required this.levelXP});
 
   // Game Arena Dimensions matching the viewport
@@ -459,7 +458,7 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
       GameOverOverlay(
         world: this,
         title: 'GAME OVER',
-        subtitle: 'Score: $score',
+        subtitle: '!!ooppppsss!!',
         position: Vector2(-arenaWidth / 2, -arenaHeight / 2),
         size: Vector2(arenaWidth, arenaHeight),
       ),
@@ -473,7 +472,7 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
       GameOverOverlay(
         world: this,
         title: 'LEVEL CLEAR!',
-        subtitle: 'Score: $score',
+        subtitle: '!!yahoooo!!',
         position: Vector2(-arenaWidth / 2, -arenaHeight / 2),
         size: Vector2(arenaWidth, arenaHeight),
       ),
@@ -488,8 +487,8 @@ class BlockBreakerWorld extends World with HasGameReference<BlockBreaker> {
     int currentXP = (existing != null) ? existing['levelXP'].toInt() : 0;
 
     await LocalProgressStore.saveProgress('block_breaker', {
-      'last_level': level,
-      'levelXP': currentXP + levelXP,
+      'lastLevel': level,
+      'gameXP': currentXP + levelXP,
     });
     ProgressSyncService.syncNow();
   }

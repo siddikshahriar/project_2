@@ -17,15 +17,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    Timer(const Duration(seconds: 1), () {
-      //final session = Supabase.instance.client.auth.currentSession;
-
-      // if (session != null) {
-      //   GoRouter.of(context).goNamed('home');
-      // } else {
-      //   GoRouter.of(context).goNamed('login_page');
-      // }
-
+    Timer(const Duration(seconds: 2), () {
       GoRouter.of(context).goNamed('home');
     });
   }

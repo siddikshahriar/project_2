@@ -2,22 +2,23 @@ import 'dart:convert';
 import 'package:hive/hive.dart';
 
 class PathFinderLevels {
-  // Maps that keep start/end points in code (as you requested).
-  // Add new level IDs here when you add them to Supabase.
-  static final Map<int, Point> _starts = {
-    1: Point(6, 1),
-    2: Point(1, 1),
-    3: Point(3, 1),
-    4: Point(7, 7),
-    5: Point(1, 1),
-  };
-  static final Map<int, Point> _ends = {
-    1: Point(6, 7),
-    2: Point(39, 15),
-    3: Point(17, 13),
-    4: Point(1, 18),
-    5: Point(57, 15),
-  };
+  static Point _startPoint(List<String> maze) {
+    for (int row = 0; row < maze.length; row++) {
+      for (int col = 0; col < maze[0].length; col++) {
+        if (maze[row][col] == 'S') return Point(row, col);
+      }
+    }
+    return Point(0, 0);
+  }
+
+  static Point _endPoint(List<String> maze) {
+    for (int row = 0; row < maze.length; row++) {
+      for (int col = 0; col < maze[0].length; col++) {
+        if (maze[row][col] == 'E') return Point(row, col);
+      }
+    }
+    return Point(0, 0);
+  }
 
   /// Returns levels from Hive cache (filled by LevelSyncService when online).
   /// Falls back to the bundled list below when offline with no cache yet.
@@ -29,15 +30,17 @@ class PathFinderLevels {
         if (list.isNotEmpty) {
           final parsedLevels = list.map<PathFinderLevel>((item) {
             final m = item as Map<String, dynamic>;
-            final id = (m['id'] as num).toInt();
+            final id = (m['level_id'] as num).toInt();
+            final levelXP = (m['levelXP'] as num).toInt();
             final maze = (m['maze'] as List<dynamic>)
                 .map((e) => e.toString())
                 .toList();
             return PathFinderLevel(
               id: id,
               maze: maze,
-              start: _starts[id] ?? Point(0, 0),
-              end: _ends[id] ?? Point(0, 0),
+              start: _startPoint(maze),
+              end: _endPoint(maze),
+              levelXP: levelXP,
             );
           }).toList();
           parsedLevels.sort((a, b) => a.id.compareTo(b.id));
@@ -96,6 +99,7 @@ class PathFinderLevels {
       ],
       start: Point(6, 1),
       end: Point(6, 7),
+      levelXP: 10,
     ),
 
     PathFinderLevel(
@@ -145,6 +149,7 @@ class PathFinderLevels {
       ],
       start: Point(1, 1),
       end: Point(39, 15),
+      levelXP: 10,
     ),
 
     PathFinderLevel(
@@ -183,6 +188,7 @@ class PathFinderLevels {
       ],
       start: Point(3, 1),
       end: Point(17, 13),
+      levelXP: 10,
     ),
 
     PathFinderLevel(
@@ -217,6 +223,7 @@ class PathFinderLevels {
       ],
       start: Point(7, 7),
       end: Point(1, 18),
+      levelXP: 10,
     ),
 
     PathFinderLevel(
@@ -285,6 +292,7 @@ class PathFinderLevels {
       ],
       start: Point(1, 1),
       end: Point(57, 15),
+      levelXP: 20,
     ),
   ];
 }
@@ -294,12 +302,14 @@ class PathFinderLevel {
   final List<String> maze;
   final Point start;
   final Point end;
+  final levelXP;
 
   PathFinderLevel({
     required this.id,
     required this.maze,
     required this.start,
     required this.end,
+    required this.levelXP,
   });
 }
 

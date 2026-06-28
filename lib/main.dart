@@ -2,12 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:project_2/router/router_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'splash_screen.dart';
-import 'login _&_signup/reset_password_page.dart';
-import 'login _&_signup/login_page.dart';
-import 'home_page.dart';
-import 'login _&_signup/forgot_password_page.dart';
-import 'package:go_router/go_router.dart';
 import 'package:project_2/services/level_sync_service.dart';
 import 'package:project_2/services/progress_sync_service.dart';
 

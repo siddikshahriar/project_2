@@ -32,19 +32,23 @@ class NeuroGym extends FlameGame {
     }
   }
 
-  void startNumberMatchingGame(int difficulty) {
+  void startNumberMatchingGame(int difficulty, int levelXP) {
     if (currentGameNumberMatching != null) {
-      currentGameNumberMatching!.startLevel(difficulty);
+      currentGameNumberMatching!.startLevel(difficulty, levelXP);
     }
   }
 
   /// creates pathfinder world and camera
-  Future<void> startPathFinder(dynamic levelData) async {
+  Future<void> startPathFinder(
+    dynamic levelData,
+    int levelID,
+    int levelXP,
+  ) async {
     overlays.remove('PathFinderDashboard');
     world.removeAll(world.children);
     children.whereType<CameraComponent>().forEach((c) => c.removeFromParent());
 
-    final pfWorld = PathFinderWorld(levelData);
+    final pfWorld = PathFinderWorld(levelData, levelID, levelXP);
     world = pfWorld;
     await add(pfWorld);
     double mazeWidth = pfWorld.cols * pfWorld.tileSize;
