@@ -112,7 +112,7 @@ class BlockBreakerDashboard extends StatelessWidget {
                         ? Icons.lock_open
                         : Icons.lock,
                     color: isDone
-                        ? Colors.blueAccent
+                        ? Colors.green
                         : levelId == lastLevel + 1
                         ? Colors.green
                         : Colors.red,
@@ -126,13 +126,14 @@ class BlockBreakerDashboard extends StatelessWidget {
               style: const TextStyle(
                 color: Color(0xFFFFDF00),
                 fontWeight: FontWeight.bold,
+                fontSize: 10,
               ),
             ),
             Text(
               'Level $levelId',
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),

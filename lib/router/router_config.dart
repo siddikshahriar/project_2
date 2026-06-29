@@ -7,58 +7,33 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:project_2/home_page.dart';
 import 'package:project_2/profile_page.dart';
 import 'package:project_2/splash_screen.dart';
-import 'router_constants.dart';
+import 'route_name.dart';
 import 'package:project_2/games/block_breaker/block_breaker.dart';
-
-// 1. UTILITY CLASS: Implements Listenable to convert streams safely for GoRouter
-class GoRouterRefreshStream extends ChangeNotifier {
-  late final StreamSubscription<dynamic> _subscription;
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    notifyListeners();
-    _subscription = stream.asBroadcastStream().listen(
-      (dynamic _) => notifyListeners(),
-    );
-  }
-
-  @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
-  }
-}
+import 'package:project_2/games/pawn_king/game_rules.dart';
+import 'package:project_2/games/pawn_king/playing_board.dart';
 
 class MyAppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
-
-    // refreshListenable: GoRouterRefreshStream(
-    //   Supabase.instance.client.auth.onAuthStateChange,
-    // ),
-    // redirect: (context, state) {
-    //   final loggedIn = Supabase.instance.client.auth.currentSession != null;
-    //   final goingToLogin = state.matchedLocation == '/login';
-
-    //   if (!loggedIn && !goingToLogin) return '/login';
-    //   if (loggedIn && goingToLogin) return '/';
-    //   return null;
-    // },
     routes: [
       GoRoute(
-        name: RouteConstants.homeRouteName,
+        name: RouteName.home,
         path: '/home_page',
         pageBuilder: (context, start) {
           return MaterialPage(child: HomePage());
         },
       ),
+
       GoRoute(
-        name: RouteConstants.profileRouteName,
+        name: RouteName.profile,
         path: '/profile_page',
         pageBuilder: (context, start) {
           return MaterialPage(child: ProfilePage());
         },
       ),
+
       GoRoute(
-        name: 'splash_screen',
+        name: RouteName.splashScreen,
         path: '/',
         pageBuilder: (context, start) {
           return MaterialPage(child: SplashScreen());
@@ -72,8 +47,9 @@ class MyAppRouter {
         },
       ),
 
+      /////////////////////////// Block Breaker routes
       GoRoute(
-        name: 'block_breaker_gamescreen',
+        name: RouteName.blockBreakerGamescreen,
         path: '/block_breaker/:level',
         pageBuilder: (context, state) {
           // Extract the level string from path parameters and parse to integer
@@ -85,12 +61,27 @@ class MyAppRouter {
           );
         },
       ),
-
       GoRoute(
-        name: 'block_breaker_dashboard',
+        name: RouteName.blockBreakerDashboard,
         path: '/games/block_breaker/dashboard',
         pageBuilder: (context, start) {
           return MaterialPage(child: BlockBreakerDashboard());
+        },
+      ),
+
+      ////////////////////////// Pawn King routes
+      GoRoute(
+        name: RouteName.pawnKingGameRules,
+        path: '/pawn_king/game_rules',
+        pageBuilder: (context, start) {
+          return MaterialPage(child: PawnKingGameRules());
+        },
+      ),
+      GoRoute(
+        name: RouteName.pawnKingPlayingBoard,
+        path: '/pawn_king/playing_board',
+        pageBuilder: (context, start) {
+          return MaterialPage(child: PawnKingPlayingBoard());
         },
       ),
     ],

@@ -14,7 +14,6 @@ void main() async {
 
   await Hive.initFlutter();
   await Hive.openBox('game_progress_box');
-  await Hive.openBox('games_catalog_box');
   await Hive.openBox('path_finder_levels_box');
   await Hive.openBox('block_breaker_levels_box');
 

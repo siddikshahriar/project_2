@@ -34,7 +34,6 @@ class _ProfilePageState extends State<ProfilePage> {
   bool loading = true;
   bool uploadingAvatar = false;
 
-  // 1. Changed from final/hardcoded to a mutable empty list
   List<GameProgress> gameStats = [];
 
   int get totalXP => gameStats.fold(0, (sum, item) => sum + item.xp);
@@ -56,7 +55,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (user == null) {
       nameController.text = "Guest User";
-      setState(() => loading = false);
+      _loadLocalHiveData();
+      if (mounted) {
+        setState(() => loading = false);
+      }
       return;
     }
 
@@ -65,8 +67,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final last = user.userMetadata?['last_name'] ?? '';
     nameController.text = "$first $last".trim();
 
+    // 1. Isolated network call so offline errors won't block local state
     try {
-      // 2. Fetch avatar and profile details
       final profileData = await supabase
           .from('profiles')
           .select()
@@ -76,16 +78,31 @@ class _ProfilePageState extends State<ProfilePage> {
       if (profileData != null) {
         avatarUrl = profileData['avatar_url'];
       }
+    } catch (e) {
+      print("Network error loading profile details: $e");
+    }
 
+    // 2. Always execute Hive data loading independently of network status
+    _loadLocalHiveData();
+
+    if (mounted) {
+      setState(() {
+        loading = false;
+      });
+    }
+  }
+
+  // Helper method dedicated to loading local progress data safely
+  void _loadLocalHiveData() {
+    try {
       final box = Hive.box('game_progress_box');
-
-      gameStats = [];
+      List<GameProgress> temporaryStats = [];
 
       for (final key in box.keys) {
         final data = box.get(key);
 
         if (data is Map) {
-          gameStats.add(
+          temporaryStats.add(
             GameProgress(
               gameName: key.toString(),
               passedLevels: (data['lastLevel'] ?? 0) as int,
@@ -94,14 +111,9 @@ class _ProfilePageState extends State<ProfilePage> {
           );
         }
       }
+      gameStats = temporaryStats;
     } catch (e) {
-      print("Error loading profile or game data: $e");
-    }
-
-    if (mounted) {
-      setState(() {
-        loading = false;
-      });
+      print("Error loading local Hive data: $e");
     }
   }
 
@@ -144,6 +156,12 @@ class _ProfilePageState extends State<ProfilePage> {
           avatarUrl = url;
         });
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Failed to upload avatar. Check your connection."),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -298,8 +316,6 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           const SizedBox(height: 10),
-
-          // 5. Shows a placeholder message if the user has no game records yet
           gameStats.isEmpty
               ? const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),

@@ -6,8 +6,9 @@ import 'games/neurogym.dart';
 import 'games/path_finder/dashboard.dart';
 import 'profile_page.dart';
 import 'games/block_breaker/dashboard.dart';
+import 'games/pawn_king/dashboard.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive/hive.dart'; // 1. Added Hive Import
+import 'package:hive/hive.dart';
 
 enum GameType { blockBreaker, numberMatching, pathFinder }
 
@@ -161,6 +162,13 @@ class _HomePageState extends State<HomePage> {
                               );
                             },
                           ),
+                          _gameCard(
+                            "Pawn King",
+                            "assets/icons/pawn_king.png",
+                            () {
+                              _navigateToGame(context, PawnKingDashboard());
+                            },
+                          ),
                         ],
                       ),
               ),
@@ -273,11 +281,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _navigateToGame(BuildContext context, Widget gameWidget) {
-    Navigator.push(
+  Future<void> _navigateToGame(BuildContext context, Widget gameWidget) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => _centeredGameScreen(gameWidget)),
     );
+    _fetchUserData();
   }
 
   Widget _centeredGameScreen(Widget gameWidget) {

@@ -90,7 +90,7 @@ class _PathFinderDashboardState extends State<PathFinderDashboard> {
                         ? Icons.lock_open
                         : Icons.lock,
                     color: isDone
-                        ? Colors.blueAccent
+                        ? Colors.green
                         : levelID == lastLevel + 1
                         ? Colors.green
                         : Colors.red,
@@ -104,13 +104,14 @@ class _PathFinderDashboardState extends State<PathFinderDashboard> {
               style: const TextStyle(
                 color: Color(0xFFFFDF00),
                 fontWeight: FontWeight.bold,
+                fontSize: 10,
               ),
             ),
             Text(
               'Level $levelID',
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
