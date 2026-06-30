@@ -32,7 +32,10 @@ class BlockBreakerLevels {
           return parsedLevels;
         }
       }
-    } catch (_) {}
+    } catch (e, stackTrace) {
+      print('hive level parsing error $e');
+      print(stackTrace);
+    }
     return _bundled;
   }
 

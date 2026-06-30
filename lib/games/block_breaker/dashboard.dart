@@ -14,9 +14,11 @@ class BlockBreakerDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 1. Load progress ONCE here, instead of inside the loop
-    final progress = LocalProgressStore.loadProgress('block_breaker');
-    final lastLevel = progress != null ? progress['last_level'] : 0;
-
+    final progress = LocalProgressStore.loadProgress('block_breaker') ?? {};
+    //final lastLevel = progress != null ? progress['last_level'] : 0;
+    final int lastLevel = (progress['last_level'] is int)
+        ? progress['last_level'] as int
+        : 0;
     return Scaffold(
       backgroundColor: const Color(
         0xFF1E222D,
